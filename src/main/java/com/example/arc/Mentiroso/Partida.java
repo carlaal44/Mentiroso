@@ -24,6 +24,8 @@ public class Partida {
     // Cuántos jugadores han entrado realmente a la partida
     // Sirve para saber qué posición del array está libre y qué bloque del mazo repartir
     int numJugadores;
+    
+    int turnoActual;
 
     // La última jugada declarada, que el siguiente jugador debe superar o levantar
     // Es null al inicio de cada ronda (después de un levantar o al empezar)
@@ -35,7 +37,17 @@ public class Partida {
     // Nombre del jugador que ha ganado, null mientras la partida sigue
     String ganador;
 
-    public long getIdPartida() {
+    
+    
+    public int getTurnoActual() {
+		return turnoActual;
+	}
+
+	public void setTurnoActual(int turnoActual) {
+		this.turnoActual = turnoActual;
+	}
+
+	public long getIdPartida() {
         return idPartida;
     }
 
@@ -89,6 +101,10 @@ public class Partida {
 
     public void setGanador(String ganador) {
         this.ganador = ganador;
+    }
+    
+    public void setHost(Jugador host) {
+        this.jugadores[0] = host;
     }
     
 }
