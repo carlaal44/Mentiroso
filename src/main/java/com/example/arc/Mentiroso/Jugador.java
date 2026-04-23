@@ -4,13 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Jugador implements Serializable{
+public class Jugador implements Serializable {
 	String nombre;
-	List<Carta> cartas = new ArrayList<>();
+	Carta[] cartas = new Carta[5];
 	Boolean activo;
-	
+
 	public Jugador() {
-		
+
 	}
 
 	public String getNombre() {
@@ -21,11 +21,11 @@ public class Jugador implements Serializable{
 		this.nombre = nombre;
 	}
 
-	public List<Carta> getCartas() {
+	public Carta[] getCartas() {
 		return cartas;
 	}
 
-	public void setCartas(List<Carta> cartas) {
+	public void setCartas(Carta[] cartas) {
 		this.cartas = cartas;
 	}
 
@@ -36,6 +36,5 @@ public class Jugador implements Serializable{
 	public void setActivo(Boolean activo) {
 		this.activo = activo;
 	}
-	
 
 }
