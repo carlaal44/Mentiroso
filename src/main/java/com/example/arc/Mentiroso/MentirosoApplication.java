@@ -8,6 +8,7 @@ public class MentirosoApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MentirosoApplication.class, args);
+		System.out.println("aksldgfladjsfhalsd");
 	}
 
 }
