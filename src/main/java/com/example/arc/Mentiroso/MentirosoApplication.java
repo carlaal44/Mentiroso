@@ -63,6 +63,7 @@ public class MentirosoApplication {
 		p.setNumJugadores(1);
 		p.setTurnoActual(0);
 		p.setFinPartida(false);
+		p.setRonda(1);
 
 		partidas.add(p);
 
@@ -82,7 +83,7 @@ public class MentirosoApplication {
 		Partida p = partidas.get(idPartida);
 
 		// Prohibido unirse
-		if (p.getTurnoActual() > 1) {
+		if (p.getRonda() > 1) {
 			return "La primera ronda ya ha terminado, no puedes unirte ahora.";
 		}
 
@@ -376,6 +377,8 @@ public class MentirosoApplication {
 
 		// Después de levantar ya no hay jugada anterior
 		p.setUltJugada(null);
+
+		p.setRonda(p.getRonda() + 1);
 
 		// Miramos si queda solo un jugador vivo
 		int vivos = 0;
