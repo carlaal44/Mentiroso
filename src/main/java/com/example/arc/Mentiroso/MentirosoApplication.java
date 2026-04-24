@@ -24,10 +24,9 @@ public class MentirosoApplication {
 	public static record RespuestaJugada(boolean ok, String mensaje, String siguienteTurno, String eliminado,
 			boolean finPartida, String ganador) {
 	}
-	
+
 	public static record RespuestaUnirse(long idPartida, Carta[] cartas, String[] jugadoresActuales, boolean esTuTurno,
 			Jugada ultJugada, String mensaje) {
-		
 	}
 
 	public static void main(String[] args) {
