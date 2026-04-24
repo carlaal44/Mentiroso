@@ -21,11 +21,16 @@ public class MentirosoApplication {
 	public static record RespuestaInicio(long idPartida, Carta[] cartas, String mensaje) {
 	}
 
+	public static record RespuestaJugada(boolean ok, String mensaje, String siguienteTurno, String eliminado,
+			boolean finPartida, String ganador) {
+	}
+
 	public static void main(String[] args) {
 		SpringApplication.run(MentirosoApplication.class, args);
 		System.out.println("Servidor levantado y listo");
 	}
 
+	// PRIMER ENDPOINT
 	@GetMapping("/crear")
 	public RespuestaInicio crear(@RequestParam(value = "nombre", defaultValue = "Host") String nombre) {
 		Partida p = new Partida();
@@ -60,6 +65,7 @@ public class MentirosoApplication {
 		return new RespuestaInicio(p.getIdPartida(), host.getCartas(), "Partida creada con éxito. Eres el Host.");
 	}
 
+	// SEGUNDO ENDPOINT
 	@GetMapping("/unirse")
 	public Object unirse(@RequestParam(value = "idPartida") int idPartida,
 			@RequestParam(value = "nombre") String nombre) {
@@ -132,6 +138,87 @@ public class MentirosoApplication {
 		return new RespuestaUnirse(p.getIdPartida(), cartasNuevo, nombresActuales, esTuTurno, ultimaJugResp, mensaje);
 	}
 
+	// TERCER ENDPOINT
+	@GetMapping("/jugar")
+	public RespuestaJugada jugar(@RequestParam int idPartida, @RequestParam String nombre, @RequestParam String tipo,
+			@RequestParam(required = false, defaultValue = "0") int valor) {
+
+		// Comprobamos que exista la partida
+		if (idPartida < 0 || idPartida >= partidas.size()) {
+			return new RespuestaJugada(false, "La partida no existe", null, null, false, null);
+		}
+
+		Partida p = partidas.get(idPartida);
+
+		// Si ya acabó no se puede jugar
+		if (p.isFinPartida()) {
+			return new RespuestaJugada(false, "La partida ya ha terminado", null, null, true, p.getGanador());
+		}
+
+		// Buscamos al jugador por nombre
+		Jugador jugador = buscarJugador(p, nombre);
+
+		if (jugador == null) {
+			return new RespuestaJugada(false, "Ese jugador no está en la partida", null, null, false, null);
+		}
+
+		if (jugador.isEliminado()) {
+			return new RespuestaJugada(false, "Estás eliminado", null, null, false, null);
+		}
+
+		// Comprobamos que sea su turno
+		Jugador jugadorTurno = p.getJugadores()[p.getTurnoActual()];
+
+		if (!jugadorTurno.getNombre().equalsIgnoreCase(nombre)) {
+			return new RespuestaJugada(false, "No es tu turno", jugadorTurno.getNombre(), null, false, null);
+		}
+
+		// Si quiere levantar la jugada anterior
+		if (tipo.equalsIgnoreCase("levantar")) {
+			return levantar(p, jugador);
+		}
+
+		// Comprobamos que el tipo de jugada exista
+		int fuerzaNueva = fuerzaTipo(tipo);
+
+		if (fuerzaNueva == 0) {
+			return new RespuestaJugada(false, "Tipo de jugada no válido", nombre, null, false, null);
+		}
+
+		Jugada anterior = p.getUltJugada();
+
+		// Si hay jugada anterior esta debe superarla
+		if (anterior != null) {
+			int fuerzaAnterior = fuerzaTipo(anterior.getTipo());
+
+			if (fuerzaNueva < fuerzaAnterior) {
+				return new RespuestaJugada(false, "La jugada no supera a la anterior", nombre, null, false, null);
+			}
+
+			if (fuerzaNueva == fuerzaAnterior && valor <= anterior.getValor()) {
+				return new RespuestaJugada(false, "La jugada no supera a la anterior", nombre, null, false, null);
+			}
+		}
+
+		// Guardamos la jugada
+		Jugada nueva = new Jugada();
+		nueva.setTipo(tipo);
+		nueva.setValor(valor);
+		nueva.setJugador(jugador);
+
+		// Aquí guardamos si decía verdad o mentía
+		nueva.setVerdad(tieneJugada(jugador, tipo, valor));
+
+		p.setUltJugada(nueva);
+
+		// Pasamos turno
+		avanzarTurno(p);
+
+		String siguiente = p.getJugadores()[p.getTurnoActual()].getNombre();
+
+		return new RespuestaJugada(true, "Jugada aceptada", siguiente, null, false, null);
+	}
+
 	// Generación y barajado de la baraja francesa
 	private List<Carta> generarMazo() {
 		List<Carta> nuevoMazo = new ArrayList<>();
@@ -148,5 +235,165 @@ public class MentirosoApplication {
 		}
 		Collections.shuffle(nuevoMazo);
 		return nuevoMazo;
+	}
+
+	// Busca un jugador por nombre dentro de una partida
+	private Jugador buscarJugador(Partida p, String nombre) {
+		for (int i = 0; i < p.getNumJugadores(); i++) {
+			if (p.getJugadores()[i].getNombre().equalsIgnoreCase(nombre)) {
+				return p.getJugadores()[i];
+			}
+		}
+		return null;
+	}
+
+	// Da una fuerza a cada jugada para compararlas
+	private int fuerzaTipo(String tipo) {
+		switch (tipo.toLowerCase()) {
+		case "carta":
+			return 1;
+		case "pareja":
+			return 2;
+		case "doblepareja":
+			return 3;
+		case "trio":
+			return 4;
+		case "full":
+			return 5;
+		case "poker":
+			return 6;
+		default:
+			return 0;
+		}
+	}
+
+	// Pasa al siguiente jugador que no este eliminado
+	private void avanzarTurno(Partida p) {
+		int siguiente = p.getTurnoActual();
+
+		do {
+			siguiente = (siguiente + 1) % p.getNumJugadores();
+		} while (p.getJugadores()[siguiente].isEliminado());
+
+		p.setTurnoActual(siguiente);
+	}
+
+	// Convierte las cartas a número para comparar
+	private int valorNumerico(String v) {
+		switch (v) {
+		case "As":
+			return 14;
+		case "A":
+			return 14;
+		case "K":
+			return 13;
+		case "Q":
+			return 12;
+		case "J":
+			return 11;
+		default:
+			return Integer.parseInt(v);
+		}
+	}
+
+	// Comprueba si el jugador tiene realmente la jugada que ha declarado
+	private boolean tieneJugada(Jugador j, String tipo, int valor) {
+
+		int[] contador = new int[15];
+
+		for (Carta c : j.getCartas()) {
+			int valCarta = valorNumerico(c.getValor());
+			contador[valCarta]++;
+		}
+
+		switch (tipo.toLowerCase()) {
+
+		case "carta":
+			return contador[valor] >= 1;
+
+		case "pareja":
+			return contador[valor] >= 2;
+
+		case "trio":
+			return contador[valor] >= 3;
+
+		case "poker":
+			return contador[valor] >= 4;
+
+		case "doblepareja":
+			int parejas = 0;
+			for (int i = 2; i < contador.length; i++) {
+				if (contador[i] >= 2) {
+					parejas++;
+				}
+			}
+			return parejas >= 2;
+
+		case "full":
+			boolean hayTrio = false;
+			boolean hayPareja = false;
+
+			for (int i = 2; i < contador.length; i++) {
+				if (contador[i] >= 3) {
+					hayTrio = true;
+				} else if (contador[i] >= 2) {
+					hayPareja = true;
+				}
+			}
+
+			return hayTrio && hayPareja;
+
+		default:
+			return false;
+		}
+	}
+
+	// Resuelve cuando un jugador levanta la jugada anterior
+	private RespuestaJugada levantar(Partida p, Jugador jugador) {
+
+		Jugada anterior = p.getUltJugada();
+
+		if (anterior == null) {
+			return new RespuestaJugada(false, "No hay jugada que levantar", null, null, false, null);
+		}
+
+		Jugador jugadorAnterior = anterior.getJugador();
+		String eliminado;
+
+		// Si el anterior decía la verdad pierde el que levanta
+		if (anterior.isVerdad()) {
+			jugador.setEliminado(true);
+			eliminado = jugador.getNombre();
+		} else {
+			// Si el anterior mentía pierde el anterior
+			jugadorAnterior.setEliminado(true);
+			eliminado = jugadorAnterior.getNombre();
+		}
+
+		// Después de levantar ya no hay jugada anterior
+		p.setUltJugada(null);
+
+		// Miramos si queda solo un jugador vivo
+		int vivos = 0;
+		String ganador = null;
+
+		for (int i = 0; i < p.getNumJugadores(); i++) {
+			if (!p.getJugadores()[i].isEliminado()) {
+				vivos++;
+				ganador = p.getJugadores()[i].getNombre();
+			}
+		}
+
+		if (vivos == 1) {
+			p.setFinPartida(true);
+			p.setGanador(ganador);
+			return new RespuestaJugada(true, "Fin de partida", null, eliminado, true, ganador);
+		}
+
+		avanzarTurno(p);
+
+		String siguiente = p.getJugadores()[p.getTurnoActual()].getNombre();
+
+		return new RespuestaJugada(true, "Se ha levantado la jugada", siguiente, eliminado, false, null);
 	}
 }
