@@ -228,7 +228,7 @@ public class MentirosoApplication {
 	private List<Carta> generarMazo() {
 		List<Carta> nuevoMazo = new ArrayList<>();
 		String[] palos = { "Corazones", "Diamantes", "Tréboles", "Picas" };
-		String[] valoresTexto = { "As", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" };
+		String[] valoresTexto = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" };
 
 		for (String palo : palos) {
 			for (String val : valoresTexto) {
@@ -363,7 +363,7 @@ public class MentirosoApplication {
 		}
 
 		Jugador jugadorAnterior = anterior.getJugador();
-		String eliminado;
+		String eliminado = "";
 
 		// Si el anterior decía la verdad pierde el que levanta
 		if (anterior.isVerdad()) {
@@ -380,7 +380,7 @@ public class MentirosoApplication {
 
 		// Miramos si queda solo un jugador vivo
 		int vivos = 0;
-		String ganador = null;
+		String ganador = "-";
 
 		for (int i = 0; i < p.getNumJugadores(); i++) {
 			if (!p.getJugadores()[i].isEliminado()) {
