@@ -2,6 +2,8 @@ package com.example.arc.Mentiroso;
 
 import java.io.Serializable;
 
+
+//DTO 
 public class RespuestaUnirse implements Serializable {
 
 	private long idPartida;
