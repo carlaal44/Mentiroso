@@ -26,9 +26,9 @@ public class Partida {
 	// repartir
 	int numJugadores;
 
-	
-	//Para la logica de unirse y el resto
+	// Para la logica de unirse y el resto
 	int turnoActual;
+	int ronda = 0;
 
 	// La última jugada declarada, que el siguiente jugador debe superar o levantar
 	// Es null al inicio de cada ronda (después de un levantar o al empezar)
@@ -104,7 +104,16 @@ public class Partida {
 		this.ganador = ganador;
 	}
 
-	// ----------------------------- Metodos importantes -------------------------------
+	public int getRonda() {
+		return ronda;
+	}
+
+	public void setRonda(int ronda) {
+		this.ronda = ronda;
+	}
+
+	// ----------------------------- Metodos importantes
+	// -------------------------------
 	public void setHost(Jugador host) {
 		this.jugadores[0] = host;
 	}

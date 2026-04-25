@@ -420,3 +420,4 @@ public class MentirosoApplication {
 		return new RespuestaJugada(true, "Se ha levantado la jugada", siguiente, eliminado, false, null);
 	}
 }
+
