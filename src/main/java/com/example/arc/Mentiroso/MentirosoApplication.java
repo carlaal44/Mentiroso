@@ -6,10 +6,12 @@ import java.util.List;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@CrossOrigin(origins = "*")//Sirve para que HTML pueda hablar" con Spring. 
 @SpringBootApplication
 @RestController
 public class MentirosoApplication {
@@ -33,6 +35,24 @@ public class MentirosoApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(MentirosoApplication.class, args);
 		System.out.println("Servidor levantado y listo");
+	}
+	
+	@GetMapping("/estado")
+	public Object estado(@RequestParam int idPartida, @RequestParam String nombre) {
+	    if (idPartida < 0 || idPartida >= partidas.size()) {
+	        return "La partida no existe";
+	    }
+	    Partida p = partidas.get(idPartida);
+
+	    String[] nombresActuales = new String[p.getNumJugadores()];
+	    for (int i = 0; i < p.getNumJugadores(); i++) {
+	        nombresActuales[i] = p.getJugadores()[i].getNombre();
+	    }
+
+	    boolean esTuTurno = p.getJugadores()[p.getTurnoActual()].getNombre().equalsIgnoreCase(nombre);
+
+	    return new RespuestaUnirse(p.getIdPartida(), null, nombresActuales, esTuTurno, p.getUltJugada(),
+	        esTuTurno ? "Es tu turno" : "Turno de: " + p.getJugadores()[p.getTurnoActual()].getNombre());
 	}
 
 	// PRIMER ENDPOINT
@@ -286,8 +306,6 @@ public class MentirosoApplication {
 	// Convierte las cartas a número para comparar
 	private int valorNumerico(String v) {
 		switch (v) {
-		case "As":
-			return 14;
 		case "A":
 			return 14;
 		case "K":

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>El Mentiroso</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['Georgia', 'serif'],
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="min-h-screen bg-green-950 text-green-100 p-6">
+
+  <!-- HEADER -->
+  <div class="text-center mb-8">
+    <h1 class="font-display text-5xl font-black text-green-400 tracking-tight">El Mentiroso</h1>
+    <p class="text-green-700 text-xs mt-1 tracking-widest uppercase">Baraja francesa · 52 cartas</p>
+  </div>
+
+  <!-- SECCIÓN INICIO -->
+  <div id="sec-inicio" class="max-w-sm mx-auto">
+    <div class="bg-green-900 border border-green-800 rounded-2xl p-6 flex flex-col gap-4">
+
+      <div class="flex flex-col gap-1">
+        <label class="text-xs text-green-600 uppercase tracking-widest">Tu nombre</label>
+        <input id="inp-nombre" type="text" placeholder="Ej: Ana"
+          class="bg-green-950 border border-green-700 rounded-lg px-4 py-2 text-green-100 placeholder-green-700 outline-none focus:border-green-400 text-sm"/>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-xs text-green-600 uppercase tracking-widest">ID partida (solo para unirse)</label>
+        <input id="inp-idpartida" type="number" placeholder="Ej: 0"
+          class="bg-green-950 border border-green-700 rounded-lg px-4 py-2 text-green-100 placeholder-green-700 outline-none focus:border-green-400 text-sm"/>
+      </div>
+
+      <div class="flex flex-col gap-2 pt-2">
+        <button onclick="crearPartida()"
+          class="bg-green-600 hover:bg-green-500 text-white font-medium py-2 rounded-lg transition-colors text-sm">
+          Crear partida
+        </button>
+        <button onclick="unirsePartida()"
+          class="border border-green-700 hover:border-green-500 text-green-400 hover:text-green-300 font-medium py-2 rounded-lg transition-colors text-sm">
+          Unirse a partida
+        </button>
+      </div>
+
+      <div id="msg-inicio" class="hidden text-center text-sm py-2 px-3 rounded-lg"></div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN JUEGO -->
+  <div id="sec-juego" class="hidden max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <div class="lg:col-span-1 flex flex-col gap-4">
+
+        <div class="bg-green-900 border border-green-800 rounded-xl p-4 flex flex-col gap-1">
+          <p class="text-xs text-green-600 uppercase tracking-widest mb-1">Partida</p>
+          <p class="text-sm text-green-400">ID: <span id="info-id" class="text-white font-bold">-</span></p>
+          <p class="text-sm text-green-400">Jugador: <span id="info-nombre" class="text-white font-bold">-</span></p>
+        </div>
+
+        <div class="bg-green-900 border border-green-800 rounded-xl p-4 flex flex-col gap-2">
+          <p class="text-xs text-green-600 uppercase tracking-widest mb-1">Jugadores</p>
+          <div id="lista-jugadores" class="flex flex-col gap-2">
+            <p class="text-green-700 text-sm">Esperando...</p>
+          </div>
+        </div>
+
+        <div class="bg-green-900 border border-green-800 rounded-xl p-4">
+          <p class="text-xs text-green-600 uppercase tracking-widest mb-2">Última jugada</p>
+          <div id="ultima-jugada" class="bg-green-950 border border-green-800 rounded-lg px-3 py-2 text-sm text-green-400">
+            Ninguna todavía
+          </div>
+        </div>
+
+        <div id="msg-estado" class="hidden text-center text-sm py-2 px-3 rounded-lg"></div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA -->
+      <div class="lg:col-span-3 flex flex-col gap-6">
+
+        <!-- Cartas -->
+        <div class="bg-green-900 border border-green-800 rounded-xl p-6">
+          <p class="text-xs text-green-600 uppercase tracking-widest mb-4">Tu mano</p>
+          <div id="mis-cartas" class="flex gap-3 justify-center flex-wrap">
+            <div class="w-20 h-28 rounded-lg border-2 border-dashed border-green-800"></div>
+            <div class="w-20 h-28 rounded-lg border-2 border-dashed border-green-800"></div>
+            <div class="w-20 h-28 rounded-lg border-2 border-dashed border-green-800"></div>
+            <div class="w-20 h-28 rounded-lg border-2 border-dashed border-green-800"></div>
+            <div class="w-20 h-28 rounded-lg border-2 border-dashed border-green-800"></div>
+          </div>
+        </div>
+
+        <!-- Panel jugada -->
+        <div class="bg-green-900 border border-green-800 rounded-xl p-6 flex flex-col gap-5">
+
+          <div>
+            <p class="text-xs text-green-600 uppercase tracking-widest mb-3">Tipo de jugada</p>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="seleccionarTipo('carta')" id="tipo-carta"
+                class="tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors">Carta</button>
+              <button onclick="seleccionarTipo('pareja')" id="tipo-pareja"
+                class="tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors">Pareja</button>
+              <button onclick="seleccionarTipo('doblePareja')" id="tipo-doblePareja"
+                class="tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors">Doble pareja</button>
+              <button onclick="seleccionarTipo('trio')" id="tipo-trio"
+                class="tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors">Trío</button>
+              <button onclick="seleccionarTipo('full')" id="tipo-full"
+                class="tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors">Full</button>
+              <button onclick="seleccionarTipo('poker')" id="tipo-poker"
+                class="tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors">Póker</button>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs text-green-600 uppercase tracking-widest mb-3">
+              Valor — <span id="label-seleccion" class="text-green-500 normal-case font-normal">Selecciona tipo primero</span>
+            </p>
+            <div id="valores-grid" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="flex gap-3 justify-end pt-2">
+            <button id="btn-levantar" onclick="levantar()" disabled
+              class="border border-red-700 text-red-400 px-8 py-3 rounded-lg font-medium text-sm hover:bg-red-950 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              Levantar
+            </button>
+            <button id="btn-jugar" onclick="jugar()" disabled
+              class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-lg font-medium text-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              Jugar
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FIN -->
+  <div id="modal-fin" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-green-900 border border-green-700 rounded-2xl p-10 text-center max-w-sm mx-4 flex flex-col gap-4">
+      <p class="text-green-600 text-xs uppercase tracking-widest">Partida terminada</p>
+      <h2 class="font-display text-4xl font-black text-green-400">¡Ganador!</h2>
+      <p id="ganador-nombre" class="text-white text-2xl font-bold">-</p>
+      <button onclick="reiniciar()"
+        class="bg-green-600 hover:bg-green-500 text-white font-medium py-2 rounded-lg transition-colors mt-2">
+        Volver al inicio
+      </button>
+    </div>
+  </div>
+
+<script>
+const BASE = "https://mountain-scratch-crushed.ngrok-free.dev";
+
+let estado = {
+  idPartida: null, nombre: null, miTurno: false,
+  tipoSeleccionado: null, valoresSeleccionados: [],
+  maxValores: 0, ultJugada: null, polling: null
+};
+
+const VALORES = ["A","K","Q","J","10","9","8","7","6","5","4","3","2"];
+const MAX_VALORES = { carta:1, pareja:1, doblePareja:2, trio:1, full:2, poker:1 };
+const TEXTOS = {
+  carta:"Elige 1 valor", pareja:"Elige 1 valor",
+  doblePareja:"Elige 2 valores distintos", trio:"Elige 1 valor",
+  full:"Elige 2 valores distintos", poker:"Elige 1 valor"
+};
+
+// ── CREAR / UNIRSE ───────────────────────────────────────────
+async function crearPartida() {
+  const nombre = document.getElementById("inp-nombre").value.trim();
+  if (!nombre) return msgInicio("Escribe tu nombre", true);
+  try {
+    const res = await fetch(`${BASE}/crear?nombre=${encodeURIComponent(nombre)}`);
+    const data = await res.json();
+    iniciarJuego(data.idPartida, nombre, data.cartas);
+    iniciarPolling();
+  } catch(e) { msgInicio("Error conectando con el servidor", true); }
+}
+
+async function unirsePartida() {
+  const nombre = document.getElementById("inp-nombre").value.trim();
+  const id = document.getElementById("inp-idpartida").value.trim();
+  if (!nombre) return msgInicio("Escribe tu nombre", true);
+  if (id === "") return msgInicio("Escribe el ID de la partida", true);
+  try {
+    const res = await fetch(`${BASE}/unirse?idPartida=${id}&nombre=${encodeURIComponent(nombre)}`);
+    const data = await res.json();
+    if (typeof data === "string") return msgInicio(data, true);
+    iniciarJuego(data.idPartida, nombre, data.cartas);
+    iniciarPolling();
+  } catch(e) { msgInicio("Error conectando con el servidor", true); }
+}
+
+function msgInicio(msg, error) {
+  const el = document.getElementById("msg-inicio");
+  el.className = error
+    ? "text-center text-sm py-2 px-3 rounded-lg bg-red-950 border border-red-800 text-red-400"
+    : "text-center text-sm py-2 px-3 rounded-lg bg-green-950 border border-green-700 text-green-400";
+  el.textContent = msg;
+  el.classList.remove("hidden");
+}
+
+// ── INICIAR JUEGO ────────────────────────────────────────────
+function iniciarJuego(idPartida, nombre, cartas) {
+  estado.idPartida = idPartida;
+  estado.nombre = nombre;
+  document.getElementById("info-id").textContent = idPartida;
+  document.getElementById("info-nombre").textContent = nombre;
+  document.getElementById("sec-inicio").classList.add("hidden");
+  document.getElementById("sec-juego").classList.remove("hidden");
+  renderCartas(cartas);
+  renderValores();
+  // NO llama a iniciarPolling aquí, lo llaman crearPartida y unirsePartida
+}
+
+// ── CARTAS ───────────────────────────────────────────────────
+function renderCartas(cartas) {
+  const cont = document.getElementById("mis-cartas");
+  cont.innerHTML = "";
+  cartas.forEach(carta => {
+    const div = document.createElement("div");
+    div.className = "w-20 h-28 rounded-lg overflow-hidden shadow-lg hover:-translate-y-2 transition-transform cursor-default";
+    const img = document.createElement("img");
+    const val = carta.valor === "10" ? "0" : carta.valor;
+    img.src = `https://deckofcardsapi.com/static/img/${val}${paloLetra(carta.palo)}.png`;
+    img.alt = `${carta.valor} ${carta.palo}`;
+    img.className = "w-full h-full object-cover";
+    img.onerror = () => {
+      const color = esRojo(carta.palo) ? "text-red-600" : "text-gray-900";
+      div.className = "w-20 h-28 rounded-lg bg-white flex flex-col items-center justify-center gap-1";
+      div.innerHTML = `<span class="font-bold text-lg ${color}">${carta.valor}</span><span class="text-2xl ${color}">${paloSimbolo(carta.palo)}</span>`;
+    };
+    div.appendChild(img);
+    cont.appendChild(div);
+  });
+}
+
+function paloLetra(palo) {
+  const p = (palo||"").toLowerCase();
+  if (p.includes("coraz")) return "H";
+  if (p.includes("pica")||p==="p") return "S";
+  if (p.includes("diam")||p==="d") return "D";
+  return "C";
+}
+function paloSimbolo(palo) {
+  const p = (palo||"").toLowerCase();
+  if (p.includes("coraz")) return "♥";
+  if (p.includes("pica"))  return "♠";
+  if (p.includes("diam"))  return "♦";
+  return "♣";
+}
+function esRojo(palo) {
+  const p = (palo||"").toLowerCase();
+  return p.includes("coraz")||p.includes("diam");
+}
+
+// ── TIPO DE JUGADA ───────────────────────────────────────────
+function seleccionarTipo(tipo) {
+  estado.tipoSeleccionado = tipo;
+  estado.valoresSeleccionados = [];
+  estado.maxValores = MAX_VALORES[tipo];
+  document.querySelectorAll(".tipo-btn").forEach(b => {
+    b.className = "tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors";
+  });
+  document.getElementById(`tipo-${tipo}`).className =
+    "tipo-btn px-4 py-1.5 rounded-lg border border-green-400 bg-green-800 text-white text-sm font-medium transition-colors";
+  document.getElementById("label-seleccion").textContent = TEXTOS[tipo];
+  renderValores();
+  actualizarBotones();
+}
+
+// ── VALORES ──────────────────────────────────────────────────
+function renderValores() {
+  const grid = document.getElementById("valores-grid");
+  grid.innerHTML = "";
+  VALORES.forEach(v => {
+    const sel = estado.valoresSeleccionados.includes(v);
+    const bloq = !estado.tipoSeleccionado ||
+      (!sel && estado.valoresSeleccionados.length >= estado.maxValores);
+    const btn = document.createElement("button");
+    btn.textContent = v;
+    btn.disabled = bloq;
+    if (sel) {
+      btn.className = "w-9 h-9 rounded-lg border border-green-400 bg-green-700 text-white text-sm font-semibold transition-colors";
+    } else if (bloq) {
+      btn.className = "w-9 h-9 rounded-lg border border-green-900 text-green-800 text-sm font-medium cursor-not-allowed";
+    } else {
+      btn.className = "w-9 h-9 rounded-lg border border-green-700 text-green-400 text-sm font-medium hover:border-green-500 hover:text-green-300 transition-colors";
+    }
+    btn.onclick = () => toggleValor(v);
+    grid.appendChild(btn);
+  });
+}
+
+function toggleValor(v) {
+  if (!estado.tipoSeleccionado) return;
+  const idx = estado.valoresSeleccionados.indexOf(v);
+  if (idx >= 0) { estado.valoresSeleccionados.splice(idx, 1); }
+  else {
+    if (estado.valoresSeleccionados.length >= estado.maxValores) return;
+    estado.valoresSeleccionados.push(v);
+  }
+  renderValores();
+  actualizarBotones();
+}
+
+function actualizarBotones() {
+  document.getElementById("btn-jugar").disabled =
+    !(estado.miTurno && estado.tipoSeleccionado && estado.valoresSeleccionados.length === estado.maxValores);
+  document.getElementById("btn-levantar").disabled =
+    !(estado.miTurno && estado.ultJugada !== null);
+}
+
+// ── JUGAR / LEVANTAR ─────────────────────────────────────────
+async function jugar() {
+  const valorNum = valorANum(valorMasAlto(estado.valoresSeleccionados));
+  try {
+    const res = await fetch(`${BASE}/jugar?idPartida=${estado.idPartida}&nombre=${encodeURIComponent(estado.nombre)}&tipo=${estado.tipoSeleccionado}&valor=${valorNum}`);
+    const data = await res.json();
+    if (data.ok) {
+      msgEstado(`Jugada: ${estado.tipoSeleccionado} de ${estado.valoresSeleccionados.join(", ")}`, false);
+      resetJugada();
+    } else {
+      msgEstado(data.mensaje, true);
+    }
+  } catch(e) { msgEstado("Error al enviar jugada", true); }
+}
+
+async function levantar() {
+  try {
+    const res = await fetch(`${BASE}/jugar?idPartida=${estado.idPartida}&nombre=${encodeURIComponent(estado.nombre)}&tipo=levantar&valor=0`);
+    const data = await res.json();
+    if (data.finPartida) {
+      mostrarFinPartida(data.ganador);
+    } else {
+      msgEstado(data.eliminado ? `${data.eliminado} eliminado` : data.mensaje, false);
+    }
+  } catch(e) { msgEstado("Error al levantar", true); }
+}
+
+// ── POLLING — usa /estado, no /unirse ────────────────────────
+function iniciarPolling() {
+  if (estado.polling) clearInterval(estado.polling);
+  estado.polling = setInterval(actualizarEstado, 2500);
+  actualizarEstado(); // primera llamada inmediata
+}
+
+async function actualizarEstado() {
+  // Seguridad: no llamar si aún no tenemos datos
+  if (estado.idPartida === null || estado.nombre === null) return;
+  try {
+    const res = await fetch(`${BASE}/estado?idPartida=${estado.idPartida}&nombre=${encodeURIComponent(estado.nombre)}`);
+    const data = await res.json();
+    if (typeof data === "string") return;
+    estado.miTurno = data.esTuTurno;
+    estado.ultJugada = data.ultJugada;
+    renderJugadores(data.jugadoresActuales, data.esTuTurno);
+    renderUltimaJugada(data.ultJugada);
+    actualizarBotones();
+    if (data.esTuTurno) msgEstado("¡Es tu turno!", false);
+    if (data.finPartida) mostrarFinPartida(data.ganador);
+  } catch(e) {}
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderJugadores(jugadores, esTuTurno) {
+  const lista = document.getElementById("lista-jugadores");
+  if (!jugadores || !jugadores.length) return;
+  lista.innerHTML = "";
+  jugadores.forEach(nombre => {
+    const turno = esTuTurno && nombre === estado.nombre;
+    const div = document.createElement("div");
+    div.className = turno
+      ? "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-800 border border-green-400 text-green-300 text-sm font-medium"
+      : "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-950 border border-green-800 text-green-600 text-sm";
+    const dot = document.createElement("div");
+    dot.className = turno ? "w-2 h-2 rounded-full bg-green-400" : "w-2 h-2 rounded-full bg-green-800";
+    const span = document.createElement("span");
+    span.textContent = nombre;
+    div.appendChild(dot); div.appendChild(span);
+    lista.appendChild(div);
+  });
+}
+
+function renderUltimaJugada(jugada) {
+  const el = document.getElementById("ultima-jugada");
+  if (!jugada) { el.textContent = "Ninguna todavía"; return; }
+  el.innerHTML =
+    `<span class="text-white font-semibold">${jugada.jugador?.nombre||"?"}</span>` +
+    `<span class="text-green-600 mx-1">declaró</span>` +
+    `<span class="text-green-300 font-semibold">${jugada.tipo}</span>` +
+    `<span class="text-green-600 mx-1">de</span>` +
+    `<span class="text-white font-semibold">${numAValor(jugada.valor)}</span>`;
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function valorANum(v) {
+  if(v==="A")return 14; if(v==="K")return 13; if(v==="Q")return 12; if(v==="J")return 11;
+  return parseInt(v);
+}
+function numAValor(n) {
+  if(n===14)return"A"; if(n===13)return"K"; if(n===12)return"Q"; if(n===11)return"J";
+  return String(n);
+}
+function valorMasAlto(vals) {
+  return vals.reduce((a,b) => valorANum(a)>=valorANum(b)?a:b);
+}
+function resetJugada() {
+  estado.tipoSeleccionado = null; estado.valoresSeleccionados = []; estado.maxValores = 0;
+  document.querySelectorAll(".tipo-btn").forEach(b => {
+    b.className = "tipo-btn px-4 py-1.5 rounded-lg border border-green-700 text-green-400 text-sm hover:border-green-500 transition-colors";
+  });
+  document.getElementById("label-seleccion").textContent = "Selecciona tipo primero";
+  renderValores(); actualizarBotones();
+}
+function msgEstado(msg, error) {
+  const el = document.getElementById("msg-estado");
+  el.className = error
+    ? "text-center text-sm py-2 px-3 rounded-lg bg-red-950 border border-red-800 text-red-400"
+    : "text-center text-sm py-2 px-3 rounded-lg bg-green-950 border border-green-700 text-green-400";
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 4000);
+}
+function mostrarFinPartida(ganador) {
+  if (estado.polling) clearInterval(estado.polling);
+  document.getElementById("ganador-nombre").textContent = ganador||"Desconocido";
+  document.getElementById("modal-fin").classList.remove("hidden");
+}
+function reiniciar() {
+  estado = { idPartida:null, nombre:null, miTurno:false, tipoSeleccionado:null,
+    valoresSeleccionados:[], maxValores:0, ultJugada:null, polling:null };
+  document.getElementById("modal-fin").classList.add("hidden");
+  document.getElementById("sec-juego").classList.add("hidden");
+  document.getElementById("sec-inicio").classList.remove("hidden");
+  document.getElementById("inp-nombre").value = "";
+  document.getElementById("inp-idpartida").value = "";
+  document.getElementById("msg-inicio").classList.add("hidden");
+}
+</script>
+</body>
+</html>
