@@ -40,7 +40,7 @@ public class MentirosoApplication {
 	@GetMapping("/estado")
 	public Object estado(@RequestParam int idPartida, @RequestParam String nombre) {
 	    if (idPartida < 0 || idPartida >= partidas.size()) {
-	        return "La partida no existe";
+	        return "La partida no existe.";
 	    }
 	    Partida p = partidas.get(idPartida);
 
