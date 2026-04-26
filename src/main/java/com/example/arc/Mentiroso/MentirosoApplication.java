@@ -28,7 +28,7 @@ public class MentirosoApplication {
 	}
 
 	public static record RespuestaUnirse(long idPartida, Carta[] cartas, String[] jugadoresActuales, boolean esTuTurno,
-			Jugada ultJugada, String mensaje) {
+			Jugada ultJugada, String mensaje, boolean finPartida, String ganador) {
 
 	}
 
@@ -52,7 +52,8 @@ public class MentirosoApplication {
 		boolean esTuTurno = p.getJugadores()[p.getTurnoActual()].getNombre().equalsIgnoreCase(nombre);
 
 		return new RespuestaUnirse(p.getIdPartida(), null, nombresActuales, esTuTurno, p.getUltJugada(),
-				esTuTurno ? "Es tu turno" : "Turno de: " + p.getJugadores()[p.getTurnoActual()].getNombre());
+				esTuTurno ? "Es tu turno" : "Turno de: " + p.getJugadores()[p.getTurnoActual()].getNombre(),
+				p.isFinPartida(), p.getGanador());
 	}
 
 	// PRIMER ENDPOINT
@@ -103,7 +104,7 @@ public class MentirosoApplication {
 		Partida p = partidas.get(idPartida);
 
 		// Prohibido unirse
-		if (p.getTurnoActual() > 1) {
+		if (p.getRonda() > 0) {
 			return "La primera ronda ya ha terminado, no puedes unirte ahora.";
 		}
 
@@ -145,7 +146,7 @@ public class MentirosoApplication {
 		}
 
 		boolean esTuTurno = (p.getTurnoActual() == pos);
-		Jugada ultimaJugResp;
+		Jugada ultimaJugResp = p.getUltJugada();
 
 		if (esTuTurno) {
 			ultimaJugResp = p.getUltJugada();
@@ -160,7 +161,8 @@ public class MentirosoApplication {
 			mensaje = "Te has unido. Turno de: " + p.getJugadores()[p.getTurnoActual()].getNombre();
 		}
 
-		return new RespuestaUnirse(p.getIdPartida(), cartasNuevo, nombresActuales, esTuTurno, ultimaJugResp, mensaje);
+		return new RespuestaUnirse(p.getIdPartida(), cartasNuevo, nombresActuales, esTuTurno, ultimaJugResp, mensaje,
+				p.isFinPartida(), p.getGanador());
 	}
 
 	// TERCER ENDPOINT
@@ -400,6 +402,8 @@ public class MentirosoApplication {
 
 		// Después de levantar ya no hay jugada anterior
 		p.setUltJugada(null);
+
+		p.setRonda(p.getRonda() + 1);
 
 		// Miramos si queda solo un jugador vivo
 		int vivos = 0;
