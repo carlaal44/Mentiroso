@@ -148,12 +148,6 @@ public class MentirosoApplication {
 		boolean esTuTurno = (p.getTurnoActual() == pos);
 		Jugada ultimaJugResp = p.getUltJugada();
 
-		if (esTuTurno) {
-			ultimaJugResp = p.getUltJugada();
-		} else {
-			ultimaJugResp = null;
-		}
-
 		String mensaje;
 		if (esTuTurno) {
 			mensaje = "Te has unido. ES TU TURNO.";
