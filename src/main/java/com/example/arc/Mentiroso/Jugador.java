@@ -1,8 +1,6 @@
 package com.example.arc.Mentiroso;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 //Jugador hereda de Persona, por lo que ya tiene nombre y apellido
 //Serializable permite convertir el objeto a JSON automáticamente (Spring lo necesita para devolver la respuesta)

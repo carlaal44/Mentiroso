@@ -40,7 +40,7 @@ public class MentirosoApplication {
 	@GetMapping("/estado")
 	public Object estado(@RequestParam int idPartida, @RequestParam String nombre) {
 		if (idPartida < 0 || idPartida >= partidas.size()) {
-			return "La partida no existe.";
+			return new RespuestaError(false, "La partida no existe.");
 		}
 		Partida p = partidas.get(idPartida);
 
@@ -98,25 +98,25 @@ public class MentirosoApplication {
 
 		// Validación básica
 		if (idPartida < 0 || idPartida >= partidas.size()) {
-			return "La partida " + idPartida + " no existe";
+			return new RespuestaError(false, "La partida " + idPartida + " no existe.");
 		}
 
 		Partida p = partidas.get(idPartida);
 
 		// Prohibido unirse
 		if (p.getRonda() > 0) {
-			return "La primera ronda ya ha terminado, no puedes unirte ahora.";
+			return new RespuestaError(false, "La primera ronda ya ha terminado, no puedes unirte ahora.");
 		}
 
 		// 10 jugadores máximo
 		if (p.getNumJugadores() >= 10) {
-			return "La partida está llena (máximo 10 jugadores).";
+			return new RespuestaError(false, "La partida está llena (máximo 10 jugadores).");
 		}
 
 		// Check de nombres duplicados
 		for (int i = 0; i < p.getNumJugadores(); i++) {
 			if (p.getJugadores()[i].getNombre().equals(nombre)) {
-				return "El jugador '" + nombre + "' ya está en la partida";
+				return new RespuestaError(false, "El jugador '" + nombre + "' ya está en la partida");
 			}
 		}
 
@@ -171,6 +171,11 @@ public class MentirosoApplication {
 
 		Partida p = partidas.get(idPartida);
 
+		if (tipo == null || tipo.trim().equals("")) {
+			return new RespuestaJugada(false, "El tipo de jugada no puede estar vacío", null, null, false, null);
+		}
+
+		tipo = tipo.toLowerCase();
 		// Si ya acabó no se puede jugar
 		if (p.isFinPartida()) {
 			return new RespuestaJugada(false, "La partida ya ha terminado", null, null, true, p.getGanador());
@@ -200,15 +205,19 @@ public class MentirosoApplication {
 		}
 
 		// Si quiere levantar la jugada anterior
-		if (tipo.equalsIgnoreCase("levantar")) {
+		if (tipo.equals("levantar")) {
 			return levantar(p, jugador);
 		}
 
 		// Comprobamos que el tipo de jugada exista
 		int fuerzaNueva = fuerzaTipo(tipo);
-
 		if (fuerzaNueva == 0) {
 			return new RespuestaJugada(false, "Tipo de jugada no válido", nombre, null, false, null);
+		}
+
+		if (valor < 2 || valor > 14) {
+			return new RespuestaJugada(false, "El valor debe estar entre 2 y 10, J, Q, K o A", nombre, null, false,
+					null);
 		}
 
 		Jugada anterior = p.getUltJugada();
