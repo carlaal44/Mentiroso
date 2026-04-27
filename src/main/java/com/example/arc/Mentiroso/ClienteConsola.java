@@ -8,8 +8,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class ClienteConsola {
 
@@ -32,7 +31,8 @@ public class ClienteConsola {
 		System.out.println("1. Crear partida");
 		System.out.println("2. Unirse a partida");
 		System.out.print("Opcion: ");
-		int opcion = Integer.parseInt(sc.nextLine());
+		int opcion = sc.nextInt();
+		sc.nextLine();
 
 		if (opcion == 1) {
 			crearPartida();
