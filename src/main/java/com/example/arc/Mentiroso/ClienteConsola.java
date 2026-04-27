@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ClienteConsola {
 
-	static final String BASE = "http://192.168.64.1:8080";
+	static final String BASE = "http://localhost:8080";
 
 	static Scanner sc = new Scanner(System.in);
 	static HttpClient client = HttpClient.newHttpClient();
