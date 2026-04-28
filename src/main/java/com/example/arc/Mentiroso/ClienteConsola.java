@@ -14,7 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 
 public class ClienteConsola {
 
-	static final String BASE = "http://10.1.192.189:8080";
+	static final String BASE = "http://192.168.1.62:8080";
 
 	static Scanner in = new Scanner(System.in);
 	static HttpClient client = HttpClient.newHttpClient();
@@ -22,8 +22,10 @@ public class ClienteConsola {
 
 	static long idPartida;
 	static String nombre;
+	static Carta[] misCartas;
 
 	public static void main(String[] args) {
+		int opcion = 0;
 
 		System.out.println("=== EL MENTIROSO ===");
 
@@ -33,7 +35,6 @@ public class ClienteConsola {
 		System.out.println("1. Crear partida");
 		System.out.println("2. Unirse a partida");
 
-		int opcion = 0;
 		while (opcion != 1 && opcion != 2) {
 			System.out.print("Opcion: ");
 			try {
@@ -44,6 +45,7 @@ public class ClienteConsola {
 		}
 
 		if (opcion == 1) {
+			System.out.println();
 			crearPartida();
 		} else {
 			long idPartidaTemp = -1;
@@ -81,6 +83,7 @@ public class ClienteConsola {
 			System.out.println(r.mensaje);
 			System.out.println("ID de la partida: " + idPartida);
 			mostrarCartas(r.cartas);
+			misCartas = r.cartas;
 
 		} catch (Exception e) {
 			System.out.println("Error creando partida");
@@ -106,7 +109,7 @@ public class ClienteConsola {
 
 			System.out.println(r.mensaje);
 			mostrarCartas(r.cartas);
-			mostrarJugadores(r.jugadoresActuales);
+			misCartas = r.cartas;
 
 		} catch (Exception e) {
 			System.err.println("Error al unirse");
@@ -132,7 +135,12 @@ public class ClienteConsola {
 				System.out.println();
 				System.out.println("----- ESTADO -----");
 				mostrarJugadores(estado.jugadoresActuales);
+				System.out.println();
 
+				if (misCartas != null) {
+		            System.out.println("------ TUS CARTAS ------");
+		            mostrarCartas(misCartas);
+		        }
 				// Mostramos ultima jugada si existe.
 				if (estado.ultJugada == null) {
 					System.out.println("Ultima jugada: Ninguna");
@@ -140,29 +148,37 @@ public class ClienteConsola {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
 							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor) + " y "
 							+ textoValor(estado.ultJugada.valor2));
+					System.out.println();
 				} else {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
 							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor));
+					System.out.println();
 				}
 
 				// Partida terminada por lo que mostramos el ganador y salimos del bucle.
 				if (estado.finPartida) {
 					System.out.println("FIN DE PARTIDA");
 					System.out.println("Ganador: " + estado.ganador);
+					System.out.println();
 					terminar = true;
 				} else if (estado.esTuTurno && estado.jugadoresActuales.length >= 2) {
 					System.out.println("ES TU TURNO");
-					menuTurno();
+					if (estado.ultJugada == null) {
+				        System.out.println("(No puedes levantar, no hay jugada anterior)");
+				    }
+				    menuTurno(estado.ultJugada != null);
 				} else if (estado.esTuTurno && estado.jugadoresActuales.length < 2) {
 					// Si es nuestro turno y estamos solos esperamos a los demas. (No tiene sentido
 					// jugar 1 solo).
 					System.out.println("Esperando a que se una otro jugador...");
 					System.out.println("Pulsa ENTER para actualizar...");
 					in.nextLine();
+					System.out.println();
 				} else {
 					System.out.println(estado.mensaje);
 					System.out.println("Pulsa ENTER para actualizar...");
 					in.nextLine();
+					System.out.println();
 				}
 
 			} catch (Exception e) {
@@ -177,33 +193,32 @@ public class ClienteConsola {
 
 	}
 
-	static void menuTurno() {// Menu del turno del jugador pudiendo jugar o levantar.
+	static void menuTurno(boolean puedeLevantar) {
+	    System.out.println("1. Jugar");
+	    if (puedeLevantar) System.out.println("2. Levantar");
 
-		System.out.println("1. Jugar");
-		System.out.println("2. Levantar");
+	    int opcion = 0;
+	    while (opcion != 1 && (opcion != 2 || !puedeLevantar)) {
+	        System.out.print("Opcion: ");
+	        try {
+	            opcion = Integer.parseInt(in.nextLine());
+	            if (opcion == 2 && !puedeLevantar) {
+	                System.out.println("No puedes levantar ahora, no hay jugada anterior.");
+	            }
+	        } catch (NumberFormatException e) {
+	            System.out.println("Por favor, introduce una opción válida.");
+	        }
+	    }
 
-		int opcion = 0;
-		while (opcion != 1 && opcion != 2) {
-			System.out.print("Opcion: ");
-			try {
-				opcion = Integer.parseInt(in.nextLine());
-			} catch (NumberFormatException e) {
-				System.out.println("Por favor, introduce 1 o 2.");
-			}
-		}
-
-		if (opcion == 1) {
-			jugar();
-
-		} else {
-			levantar();
-		}
+	    if (opcion == 1) jugar();
+	    else levantar();
 	}
 
 	static void jugar() {// Pide tipo y valor, validandolos.
 
 		String tipo = "";
-
+		System.out.println();
+		
 		while (!tipoValido(tipo)) {
 			System.out.println("----Tipos----");
 			System.out.println("- Carta.");
@@ -222,7 +237,9 @@ public class ClienteConsola {
 
 		int valor = 0;
 		int valor2 = 0;
-
+		
+		System.out.println();
+		
 		while (valor == 0) {// Validamos.
 			if (tipo.equals("doblepareja") || tipo.equals("full")) {
 				System.out.print("Valor MÁS ALTO (2-10, J, Q, K, A): ");
@@ -246,9 +263,9 @@ public class ClienteConsola {
 				valor2 = numeroValorSeguro(valorTexto2);
 
 				if (valor2 == 0) {
-					System.out.println("Valor no válido. Prueba con 2-10, J, Q, K o A.");
+					System.err.println("Valor no válido. Prueba con 2-10, J, Q, K o A.");
 				} else if (valor2 == valor) {
-					System.out.println("Los dos valores no pueden ser iguales.");
+					System.err.println("Los dos valores no pueden ser iguales.");
 					valor2 = 0;
 				}
 			}
@@ -271,11 +288,11 @@ public class ClienteConsola {
 			}
 
 		} catch (Exception e) {
-			System.out.println("Error al jugar");
+			System.err.println("Error al jugar");
 			if (e.getMessage() == null) {
-				System.out.println("Error de conexión: El servidor no responde o está inactivo.");
+				System.err.println("Error de conexión: El servidor no responde o está inactivo.");
 			} else {
-				System.out.println(e.getMessage());
+				System.err.println(e.getMessage());
 			}
 		}
 	}

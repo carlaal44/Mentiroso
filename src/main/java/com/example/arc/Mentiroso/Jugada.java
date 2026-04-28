@@ -6,7 +6,7 @@ public class Jugada {
 	// Tipo de jugada declarada
 	String tipo;
 	// Valor más alto declarado ya convertido a int para poder comparar con >
-	int valor;
+	int valor, valor2;
 	// El jugador que ha hecho esta jugada
 	// Se guarda el objeto entero para poder acceder a sus cartas reales al levantar
 	Jugador jugador;
@@ -37,6 +37,14 @@ public class Jugada {
 
 	public void setValor(int valor) {
 		this.valor = valor;
+	}
+	
+	public int getValor2() {
+	    return valor2;
+	}
+
+	public void setValor2(int valor2) {
+	    this.valor2 = valor2;
 	}
 
 	public Jugador getJugador() {
