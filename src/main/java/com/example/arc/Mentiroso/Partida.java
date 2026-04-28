@@ -3,31 +3,28 @@ package com.example.arc.Mentiroso;
 import java.util.ArrayList;
 import java.util.List;
 
-// Representa una partida en curso
-// Varias partidas pueden existir en paralelo en el servidor
+//Representa una partida en curso pudiendo existir varias en paralelo.
 
 public class Partida {
 
-	// Identificador único de la partida
 	// Coincide con el índice en el ArrayList<Partida> del controlador
 	long idPartida;
 
 	// Array fijo de 10 jugadores porque el máximo posible es 52/5 = 10
-	// Se usa array en vez de ArrayList porque el tamaño máximo es conocido y fijo
 	Jugador[] jugadores = new Jugador[10];
 
-	// El mazo completo de 52 cartas mezcladas aleatoriamente al crear la partida
-	// Se usa ArrayList porque Collections.shuffle() necesita una List para mezclar
+	// El mazo completo de 52 cartas mezcladas aleatoriamente al crear la partida.
 	// Cada jugador n recibe las cartas desde mazo[n*5] hasta mazo[n*5+4]
 	List<Carta> mazo = new ArrayList<Carta>();
 
 	// Cuántos jugadores han entrado realmente a la partida
-	// Sirve para saber qué posición del array está libre y qué bloque del mazo
-	// repartir
+	// Sirve para saber qué posición del array está libre y qué bloque del mazo hay
+	// que repartir.
 	int numJugadores;
 
-	// Para la logica de unirse y el resto
+	// Indice del jugador cada vez que alguien levanta.
 	int turnoActual;
+	// Mientras ronda sea 0 se pueden unir, si es mayor no se uniran.
 	int ronda = 0;
 
 	// La última jugada declarada, que el siguiente jugador debe superar o levantar
@@ -37,7 +34,6 @@ public class Partida {
 	// true cuando solo queda un jugador no eliminado
 	boolean finPartida;
 
-	// Nombre del jugador que ha ganado, null mientras la partida sigue
 	String ganador;
 
 	public int getTurnoActual() {
@@ -112,20 +108,18 @@ public class Partida {
 		this.ronda = ronda;
 	}
 
-	// ----------------------------- Metodos importantes
-	// -------------------------------
-	public void setHost(Jugador host) {
+	public void setHost(Jugador host) {//Metemos al creador de la partida como host.
 		this.jugadores[0] = host;
 	}
 
-	public void agregarJugador(Jugador nuevo) {
+	public void agregarJugador(Jugador nuevo) {//Añadimos un jugador aumentado el numero de jugadores.
 		if (this.numJugadores < this.jugadores.length) {
 			this.jugadores[this.numJugadores] = nuevo;
 			this.numJugadores++;
 		}
 	}
 
-	public String getNombreJugadorEnTurno() {
+	public String getNombreJugadorEnTurno() {//Devuelve el nombre del que le toca jugar.
 		return this.jugadores[this.turnoActual].getNombre();
 	}
 

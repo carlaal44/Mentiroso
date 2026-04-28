@@ -11,15 +11,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@CrossOrigin(origins = "*") // Sirve para que HTML pueda hablar" con Spring.
+//Arranca la configuracion automatica de Spring y levanta Tomcat
 @SpringBootApplication
+//Indica que esta clase gestiona los endpoints.
 @RestController
 public class MentirosoApplication {
 
-	// Permite que hayan varias partidas a lavez
+	//Almacena en memoria de todas las partidas activas.
 	List<Partida> partidas = new ArrayList<>();
 
-	// DTO
+	// DTOs estructurar el JSON
 	public static record RespuestaInicio(long idPartida, Carta[] cartas, String mensaje) {
 	}
 
@@ -32,23 +33,25 @@ public class MentirosoApplication {
 
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) {//Arrancamos el servidor.
 		SpringApplication.run(MentirosoApplication.class, args);
 		System.out.println("Servidor levantado y listo");
 	}
 
-	@GetMapping("/estado")
+	@GetMapping("/estado")//Consulta el estado sin modificar nada, llamandolo el cliente cada vez que pulsa ENTER.
 	public Object estado(@RequestParam int idPartida, @RequestParam String nombre) {
 		if (idPartida < 0 || idPartida >= partidas.size()) {
 			return new RespuestaError(false, "La partida no existe.");
 		}
 		Partida p = partidas.get(idPartida);
 
+		//Recogemos los nombres de todos los jugadores para mostrarlos en pantalla
 		String[] nombresActuales = new String[p.getNumJugadores()];
 		for (int i = 0; i < p.getNumJugadores(); i++) {
 			nombresActuales[i] = p.getJugadores()[i].getNombre();
 		}
 
+		//Comprobamos s el jugador que pregunta es el que tiene el turno ahora.
 		boolean esTuTurno = p.getJugadores()[p.getTurnoActual()].getNombre().equalsIgnoreCase(nombre);
 
 		return new RespuestaUnirse(p.getIdPartida(), null, nombresActuales, esTuTurno, p.getUltJugada(),
@@ -56,18 +59,19 @@ public class MentirosoApplication {
 				p.isFinPartida(), p.getGanador());
 	}
 
-	// PRIMER ENDPOINT
+	//Crea nueva partida y devuelve el id y las cartas del host.
 	@GetMapping("/crear")
 	public RespuestaInicio crear(@RequestParam(value = "nombre", defaultValue = "Host") String nombre) {
 		Partida p = new Partida();
 
-		// De momento el ID es la posición en la lista
+		// De momento el ID es la posición en la lista.
 		p.setIdPartida(partidas.size());
 
+		//Creamos y generamos.
 		List<Carta> mazoRecienGenerado = generarMazo();
 		p.setMazo(mazoRecienGenerado);
 
-		// Setup del Host
+		//Creamos el Host y damos las primeras 5.
 		Jugador host = new Jugador();
 		host.setNombre(nombre);
 		host.setIdJugador(0);
@@ -81,6 +85,7 @@ public class MentirosoApplication {
 
 		host.setCartas(hostCartas);
 
+		//Configuramos el estado inicial de la partida.
 		p.setHost(host);
 		p.setNumJugadores(1);
 		p.setTurnoActual(0);
@@ -91,29 +96,29 @@ public class MentirosoApplication {
 		return new RespuestaInicio(p.getIdPartida(), host.getCartas(), "Partida creada con éxito. Eres el Host.");
 	}
 
-	// SEGUNDO ENDPOINT
+	//Permitimos que un jugador se una a partida existente.
 	@GetMapping("/unirse")
 	public Object unirse(@RequestParam(value = "idPartida") int idPartida,
 			@RequestParam(value = "nombre") String nombre) {
 
-		// Validación básica
+		// Validación.
 		if (idPartida < 0 || idPartida >= partidas.size()) {
 			return new RespuestaError(false, "La partida " + idPartida + " no existe.");
 		}
 
 		Partida p = partidas.get(idPartida);
 
-		// Prohibido unirse
+		//Solo se puede unir si nadie ha levantado todavia ronda == 0 estamos en inicio.
 		if (p.getRonda() > 0) {
 			return new RespuestaError(false, "La primera ronda ya ha terminado, no puedes unirte ahora.");
 		}
 
-		// 10 jugadores máximo
+		// 10 jugadores máximo.
 		if (p.getNumJugadores() >= 10) {
 			return new RespuestaError(false, "La partida está llena (máximo 10 jugadores).");
 		}
 
-		// Check de nombres duplicados
+		// Check de nombres duplicados.
 		for (int i = 0; i < p.getNumJugadores(); i++) {
 			if (p.getJugadores()[i].getNombre().equals(nombre)) {
 				return new RespuestaError(false, "El jugador '" + nombre + "' ya está en la partida");
@@ -130,8 +135,7 @@ public class MentirosoApplication {
 		// Asignamos las 5 cartas correspondientes del mazo
 		Carta[] cartasNuevo = new Carta[5];
 		// Repartimos las cartas del mazo según el orden de llegada (pos)
-		// Si entra el segundo (pos=1), se lleva del índice 5 al 9 para no pisarse con
-		// el resto
+		// Si entra el segundo (pos=1), se lleva del índice 5 al 9 para no pisarse con el resto.
 		for (int i = 0; i < 5; i++) {
 			cartasNuevo[i] = p.getMazo().get(pos * 5 + i);
 		}
@@ -159,7 +163,7 @@ public class MentirosoApplication {
 				p.isFinPartida(), p.getGanador());
 	}
 
-	// TERCER ENDPOINT
+	//Gestionamos jugadas delcaradas y cuando se levanta.
 	@GetMapping("/jugar")
 	public RespuestaJugada jugar(@RequestParam int idPartida, @RequestParam String nombre, @RequestParam String tipo,
 			@RequestParam(required = false, defaultValue = "0") int valor) {
@@ -169,25 +173,26 @@ public class MentirosoApplication {
 			return new RespuestaJugada(false, "La partida no existe", null, null, false, null);
 		}
 
-		Partida p = partidas.get(idPartida);
+		Partida partida = partidas.get(idPartida);
 
+		//Validamos que no venga vacio.
 		if (tipo == null || tipo.trim().equals("")) {
 			return new RespuestaJugada(false, "El tipo de jugada no puede estar vacío", null, null, false, null);
 		}
 
 		tipo = tipo.toLowerCase();
 		// Si ya acabó no se puede jugar
-		if (p.isFinPartida()) {
-			return new RespuestaJugada(false, "La partida ya ha terminado", null, null, true, p.getGanador());
+		if (partida.isFinPartida()) {
+			return new RespuestaJugada(false, "La partida ya ha terminado", null, null, true, partida.getGanador());
 		}
 
 		// Comprobamos que el host no juege solo
-		if (p.getNumJugadores() < 2) {
+		if (partida.getNumJugadores() < 2) {
 			return new RespuestaJugada(false, "Se necesitan al menos 2 jugadores para jugar", null, null, false, null);
 		}
 
 		// Buscamos al jugador por nombre
-		Jugador jugador = buscarJugador(p, nombre);
+		Jugador jugador = buscarJugador(partida, nombre);
 
 		if (jugador == null) {
 			return new RespuestaJugada(false, "Ese jugador no está en la partida", null, null, false, null);
@@ -198,7 +203,7 @@ public class MentirosoApplication {
 		}
 
 		// Comprobamos que sea su turno
-		Jugador jugadorTurno = p.getJugadores()[p.getTurnoActual()];
+		Jugador jugadorTurno = partida.getJugadores()[partida.getTurnoActual()];
 
 		if (!jugadorTurno.getNombre().equalsIgnoreCase(nombre)) {
 			return new RespuestaJugada(false, "No es tu turno", jugadorTurno.getNombre(), null, false, null);
@@ -206,7 +211,7 @@ public class MentirosoApplication {
 
 		// Si quiere levantar la jugada anterior
 		if (tipo.equals("levantar")) {
-			return levantar(p, jugador);
+			return levantar(partida, jugador);
 		}
 
 		// Comprobamos que el tipo de jugada exista
@@ -215,14 +220,15 @@ public class MentirosoApplication {
 			return new RespuestaJugada(false, "Tipo de jugada no válido", nombre, null, false, null);
 		}
 
+		//El valor debe estar entre 2 y 14.
 		if (valor < 2 || valor > 14) {
 			return new RespuestaJugada(false, "El valor debe estar entre 2 y 10, J, Q, K o A", nombre, null, false,
 					null);
 		}
 
-		Jugada anterior = p.getUltJugada();
+		Jugada anterior = partida.getUltJugada();
 
-		// Si hay jugada anterior esta debe superarla
+		// Si hay jugada anterior esta debe superarla o con el tipo igual debe superar en valor numerico.
 		if (anterior != null) {
 			int fuerzaAnterior = fuerzaTipo(anterior.getTipo());
 
@@ -244,12 +250,12 @@ public class MentirosoApplication {
 		// Aquí guardamos si decía verdad o mentía
 		nueva.setVerdad(tieneJugada(jugador, tipo, valor));
 
-		p.setUltJugada(nueva);
+		partida.setUltJugada(nueva);
 
 		// Pasamos turno
-		avanzarTurno(p);
+		avanzarTurno(partida);
 
-		String siguiente = p.getJugadores()[p.getTurnoActual()].getNombre();
+		String siguiente = partida.getJugadores()[partida.getTurnoActual()].getNombre();
 
 		return new RespuestaJugada(true, "Jugada aceptada", siguiente, null, false, null);
 	}
@@ -307,7 +313,9 @@ public class MentirosoApplication {
 		int siguiente = p.getTurnoActual();
 
 		do {
+			//Hace que cuando llegue al ultimo vuelva al primero.
 			siguiente = (siguiente + 1) % p.getNumJugadores();
+			//Hacemos que vaya solo a alguien vivo.
 		} while (p.getJugadores()[siguiente].isEliminado());
 
 		p.setTurnoActual(siguiente);
@@ -332,6 +340,7 @@ public class MentirosoApplication {
 	// Comprueba si el jugador tiene realmente la jugada que ha declarado
 	private boolean tieneJugada(Jugador j, String tipo, int valor) {
 
+		//15 porque el maximo es 14 y tenemos del 0 al 14.
 		int[] contador = new int[15];
 
 		for (Carta c : j.getCartas()) {
@@ -419,12 +428,14 @@ public class MentirosoApplication {
 			}
 		}
 
+		//Si queda 1 termian la partida
 		if (vivos == 1) {
 			p.setFinPartida(true);
 			p.setGanador(ganador);
 			return new RespuestaJugada(true, "Fin de partida", null, eliminado, true, ganador);
 		}
 
+		//Si quedan varios pasamos turno al siguiente vivo.
 		avanzarTurno(p);
 
 		String siguiente = p.getJugadores()[p.getTurnoActual()].getNombre();

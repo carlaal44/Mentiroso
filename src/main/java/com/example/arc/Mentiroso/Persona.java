@@ -1,7 +1,6 @@
 package com.example.arc.Mentiroso;
 
-//Clase base que representa a cualquier persona del sistema
-//Se usa como padre de Jugador mediante herencia (extends)
+//Clase base que representa a cualquier persona del sistema.
 
 public class Persona {
 
@@ -22,5 +21,5 @@ public class Persona {
 	public void setApellido(String apellido) {
 		this.apellido = apellido;
 	}
-	
+
 }

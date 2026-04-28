@@ -1,8 +1,13 @@
 package com.example.arc.Mentiroso;
 
-public class RespuestaError {
+import java.io.Serializable;
 
+//Hemos creado esta clase porque los errores se devolvian en String y el cliente no lo leia entonces fallaba al no tenerlo en JSON.
+
+public class RespuestaError implements Serializable{
+	//Siempre false en un error
     boolean ok;
+    //Mensaje a mostrar
     String mensaje;
 
     public RespuestaError() {

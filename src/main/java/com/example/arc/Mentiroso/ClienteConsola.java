@@ -10,15 +10,17 @@ import java.util.Scanner;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import tools.jackson.databind.ObjectMapper;
 
+//Hacemos peticiones GET al servidor, usamos ObjetcMapper para convertir la respuesta.
+
 public class ClienteConsola {
 
-	static final String BASE = "http://localhost:8080";
+	static final String BASE = "http://10.1.192.189:8080";
 
-	static Scanner sc = new Scanner(System.in);
+	static Scanner in = new Scanner(System.in);
 	static HttpClient client = HttpClient.newHttpClient();
 	static ObjectMapper om = new ObjectMapper();
 
-	static int idPartida;
+	static long idPartida;
 	static String nombre;
 
 	public static void main(String[] args) {
@@ -26,31 +28,32 @@ public class ClienteConsola {
 		System.out.println("=== EL MENTIROSO ===");
 
 		System.out.print("Tu nombre: ");
-		nombre = sc.nextLine();
+		nombre = in.nextLine();
 
 		System.out.println("1. Crear partida");
 		System.out.println("2. Unirse a partida");
 		System.out.print("Opcion: ");
-		int opcion = sc.nextInt();
-		sc.nextLine();
+		int opcion = in.nextInt();
+		in.nextLine();
 
 		if (opcion == 1) {
 			crearPartida();
 		} else {
 			System.out.print("ID partida: ");
-			idPartida = Integer.parseInt(sc.nextLine());
+			idPartida = in.nextLong();
+			in.nextLine();
 			unirsePartida();
 		}
-
+		// Entramos.
 		jugarBucle();
 	}
 
-	static void crearPartida() {
+	static void crearPartida() {// Llamamos al endpoint de /crear guarda el idPartida y muestra cartas.
 		try {
 			String json = get("/crear?nombre=" + enc(nombre));
 			RespuestaInicio r = om.readValue(json, RespuestaInicio.class);
 
-			idPartida = (int) r.idPartida;
+			idPartida = r.idPartida;
 
 			System.out.println(r.mensaje);
 			System.out.println("ID de la partida: " + idPartida);
@@ -62,7 +65,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void unirsePartida() {
+	static void unirsePartida() {// Llamamos al endpoint /unirse con el idPartida introducido por el usuario.
 		try {
 			String json = get("/unirse?idPartida=" + idPartida + "&nombre=" + enc(nombre));
 			RespuestaUnirse r = om.readValue(json, RespuestaUnirse.class);
@@ -77,7 +80,8 @@ public class ClienteConsola {
 		}
 	}
 
-	static void jugarBucle() {
+	static void jugarBucle() {// Bucle en el que se repite hasta que se ejecuta finPartida a true, consultando
+								// el estado y decide que mostrar segun si es el turno del juador.
 
 		boolean terminar = false;
 
@@ -89,14 +93,16 @@ public class ClienteConsola {
 				System.out.println();
 				System.out.println("----- ESTADO -----");
 				mostrarJugadores(estado.jugadoresActuales);
-
+				
+				//Mostramos ultima jugada si existe.
 				if (estado.ultJugada == null) {
-					System.out.println("Ultima jugada: ninguna");
+					System.err.println("Ultima jugada: Ninguna");
 				} else {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
 							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor));
 				}
-
+				
+				//Partida terminada por lo que mostramos el ganador y salimos del bucle.
 				if (estado.finPartida) {
 					System.out.println("FIN DE PARTIDA");
 					System.out.println("Ganador: " + estado.ganador);
@@ -105,13 +111,14 @@ public class ClienteConsola {
 					System.out.println("ES TU TURNO");
 					menuTurno();
 				} else if (estado.esTuTurno && estado.jugadoresActuales.length < 2) {
+					//Si es nuestro turno y estamos solos esperamos a los demas. (No tiene sentido jugar 1 solo).
 					System.out.println("Esperando a que se una otro jugador...");
 					System.out.println("Pulsa ENTER para actualizar...");
-					sc.nextLine();
+					in.nextLine();
 				} else {
 					System.out.println(estado.mensaje);
 					System.out.println("Pulsa ENTER para actualizar...");
-					sc.nextLine();
+					in.nextLine();
 				}
 
 			} catch (Exception e) {
@@ -121,13 +128,14 @@ public class ClienteConsola {
 		}
 	}
 
-	static void menuTurno() {
+	static void menuTurno() {//Menu del turno del trabajador pudiendo jugar o levantar.
 
 		System.out.println("1. Jugar");
 		System.out.println("2. Levantar");
 		System.out.print("Opcion: ");
-		int opcion = Integer.parseInt(sc.nextLine());
-
+		int opcion = in.nextInt();
+		in.nextLine();
+		
 		if (opcion == 1) {
 			jugar();
 
@@ -136,14 +144,20 @@ public class ClienteConsola {
 		}
 	}
 
-	static void jugar() {
+	static void jugar() {//Pide tipo y valor, validandolos.
 
 		String tipo = "";
 
 		while (!tipoValido(tipo)) {
-			System.out.println("Tipos: carta, pareja, doblepareja, trio, full, poker");
+			System.out.println("----Tipos----");
+			System.out.println("- Carta.");
+			System.out.println("- Pareja.");
+			System.out.println("- Doble Pareja.");
+			System.out.println("- Trio.");
+			System.out.println("- Full.");
+			System.out.println("- Poker.");
 			System.out.print("Tipo: ");
-			tipo = sc.nextLine().toLowerCase();
+			tipo = in.nextLine().toLowerCase().trim().replace(" ", "");
 
 			if (!tipoValido(tipo)) {
 				System.out.println("Tipo no válido. Intenta otra vez.");
@@ -151,9 +165,9 @@ public class ClienteConsola {
 		}
 		int valor = 0;
 
-		while (valor == 0) {
+		while (valor == 0) {//Validamos.
 			System.out.print("Valor (2-10, J, Q, K, A): ");
-			String valorTexto = sc.nextLine().toUpperCase();
+			String valorTexto = in.nextLine().toUpperCase();
 
 			valor = numeroValorSeguro(valorTexto);
 
@@ -163,7 +177,7 @@ public class ClienteConsola {
 		}
 
 		try {
-			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=" + enc(tipo)
+			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=" + enc(tipo)//enc, explicado mas abajo.
 					+ "&valor=" + valor);
 
 			RespuestaJugada r = om.readValue(json, RespuestaJugada.class);
@@ -184,12 +198,12 @@ public class ClienteConsola {
 		}
 	}
 
-	static boolean tipoValido(String tipo) {
-		return tipo.equals("carta") || tipo.equals("pareja") || tipo.equals("doblepareja") || tipo.equals("trio")
-				|| tipo.equals("full") || tipo.equals("poker");
+	static boolean tipoValido(String tipo) {//Comprobamos si es valido.
+		return tipo.equalsIgnoreCase("carta") || tipo.equalsIgnoreCase("pareja") || tipo.equalsIgnoreCase("doblepareja") || tipo.equalsIgnoreCase("trio")
+				|| tipo.equalsIgnoreCase("full") || tipo.equalsIgnoreCase("poker");
 	}
 
-	static int numeroValorSeguro(String valor) {
+	static int numeroValorSeguro(String valor) {//Convertimos el String a int.
 
 		if (valor.equals("A"))
 			return 14;
@@ -210,7 +224,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void levantar() {
+	static void levantar() {//Llamamos al endpoint /jugar con tipo = levantar para mirar la jugada anterior.
 
 		try {
 			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=levantar&valor=0");
@@ -233,33 +247,34 @@ public class ClienteConsola {
 		}
 	}
 
-	static RespuestaUnirse consultarEstado() throws Exception {
+	static RespuestaUnirse consultarEstado() throws Exception {//Consultamos el estado actual llamando al endpoint /estado.
 		String json = get("/estado?idPartida=" + idPartida + "&nombre=" + enc(nombre));
 		return om.readValue(json, RespuestaUnirse.class);
 	}
 
-	static String get(String endpoint) throws Exception {
+	static String get(String endpoint) throws Exception {//Metodo que hace la peticion GET al servidor y devuelve el cuerpo como String.
 
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(BASE + endpoint)).build();
-
 		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
 		return response.body();
 	}
 
+	// Codifica el texto para que sea seguro en una URL, convirtiendo espacios y
+	// caracteres especiales a una URL.
 	static String enc(String texto) {
 		return URLEncoder.encode(texto, StandardCharsets.UTF_8);
 	}
 
 	static int numeroValor(String valor) {
 
-		if (valor.equals("A")) {
+		if (valor.equalsIgnoreCase("A")) {
 			return 14;
-		} else if (valor.equals("K")) {
+		} else if (valor.equalsIgnoreCase("K")) {
 			return 13;
-		} else if (valor.equals("Q")) {
+		} else if (valor.equalsIgnoreCase("Q")) {
 			return 12;
-		} else if (valor.equals("J")) {
+		} else if (valor.equalsIgnoreCase("J")) {
 			return 11;
 		} else {
 			return Integer.parseInt(valor);
@@ -281,7 +296,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void mostrarCartas(Carta[] cartas) {
+	static void mostrarCartas(Carta[] cartas) {//Mostramos cartas al jugador.
 
 		System.out.println("Tus cartas:");
 
@@ -290,7 +305,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void mostrarJugadores(String[] jugadores) {
+	static void mostrarJugadores(String[] jugadores) {//Mostramos lista de jugadores.
 
 		System.out.println("Jugadores:");
 
@@ -299,6 +314,7 @@ public class ClienteConsola {
 		}
 	}
 
+	//Clases internas para mapear las respuestas JSON del servidor.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class Carta {
 		public String valor;
@@ -318,6 +334,7 @@ public class ClienteConsola {
 		public boolean verdad;
 	}
 
+	//Mapea la respuesta de /crear.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class RespuestaInicio {
 		public long idPartida;
@@ -325,6 +342,7 @@ public class ClienteConsola {
 		public String mensaje;
 	}
 
+	//Mapea la respuesta de /jugar y /levantar.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class RespuestaJugada {
 		public boolean ok;
@@ -335,6 +353,7 @@ public class ClienteConsola {
 		public String ganador;
 	}
 
+	//Mapea la respuesta de /estado y /unirse.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class RespuestaUnirse {
 		public long idPartida;
