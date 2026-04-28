@@ -8,7 +8,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import tools.jackson.databind.ObjectMapper;
 
 //Hacemos peticiones GET al servidor, usamos ObjetcMapper para convertir la respuesta.
 
@@ -77,7 +78,11 @@ public class ClienteConsola {
 
 		} catch (Exception e) {
 			System.out.println("Error creando partida");
-			System.out.println(e.getMessage());
+			if (e.getMessage() == null) {
+				System.out.println("Error de conexión: El servidor no responde o está inactivo.");
+			} else {
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 
@@ -99,7 +104,11 @@ public class ClienteConsola {
 
 		} catch (Exception e) {
 			System.err.println("Error al unirse");
-			System.err.println(e.getMessage());
+			if (e.getMessage() == null) {
+				System.err.println("Error de conexión: El servidor no responde o está inactivo.");
+			} else {
+				System.err.println(e.getMessage());
+			}
 			System.exit(0);
 		}
 	}
@@ -120,7 +129,7 @@ public class ClienteConsola {
 
 				// Mostramos ultima jugada si existe.
 				if (estado.ultJugada == null) {
-					System.err.println("Ultima jugada: Ninguna");
+					System.out.println("Ultima jugada: Ninguna");
 				} else {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
 							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor));
@@ -148,7 +157,11 @@ public class ClienteConsola {
 
 			} catch (Exception e) {
 				System.out.println("Error consultando estado");
-				System.out.println(e.getMessage());
+				if (e.getMessage() == null) {
+					System.out.println("Error de conexión: El servidor no responde o está inactivo.");
+				} else {
+					System.out.println(e.getMessage());
+				}
 			}
 		}
 	}
@@ -222,7 +235,11 @@ public class ClienteConsola {
 
 		} catch (Exception e) {
 			System.out.println("Error al jugar");
-			System.out.println(e.getMessage());
+			if (e.getMessage() == null) {
+				System.out.println("Error de conexión: El servidor no responde o está inactivo.");
+			} else {
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 
@@ -272,7 +289,11 @@ public class ClienteConsola {
 
 		} catch (Exception e) {
 			System.out.println("Error al levantar");
-			System.out.println(e.getMessage());
+			if (e.getMessage() == null) {
+				System.out.println("Error de conexión: El servidor no responde o está inactivo.");
+			} else {
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 
