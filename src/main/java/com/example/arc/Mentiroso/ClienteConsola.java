@@ -14,7 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 
 public class ClienteConsola {
 
-	static final String BASE = "http://192.168.1.62:8080";
+	static final String BASE = "http://localhost:8080";
 
 	static Scanner in = new Scanner(System.in);
 	static HttpClient client = HttpClient.newHttpClient();
@@ -25,51 +25,70 @@ public class ClienteConsola {
 	static Carta[] misCartas;
 
 	public static void main(String[] args) {
-		int opcion = 0;
+		boolean entrarJuego = false;
 
 		System.out.println("=== EL MENTIROSO ===");
-
 		System.out.print("Tu nombre: ");
 		nombre = in.nextLine();
+		// Repetimos el menú hasta que el jugador consiga crear o unirse a una partida
+		do {
+			int opcion = 0;
 
-		System.out.println("1. Crear partida");
-		System.out.println("2. Unirse a partida");
+			System.out.println("1. Crear partida");
+			System.out.println("2. Unirse a partida");
 
-		while (opcion != 1 && opcion != 2) {
-			System.out.print("Opcion: ");
-			try {
-				opcion = Integer.parseInt(in.nextLine());
-			} catch (NumberFormatException e) {
-				System.out.println("Por favor, introduce 1 o 2.");
-			}
-		}
-
-		if (opcion == 1) {
-			System.out.println();
-			crearPartida();
-		} else {
-			long idPartidaTemp = -1;
-
-			while (idPartidaTemp < 0) {
-				System.out.print("ID partida: ");
-
-				if (in.hasNextLong()) {
-					idPartidaTemp = in.nextLong();
-					in.nextLine(); // limpiar salto de línea
-
-					if (idPartidaTemp < 0) {
-						System.out.println("El ID debe ser positivo.");
-					}
-				} else {
-					System.out.println("Introduce un número válido.");
-					in.nextLine(); // limpiar lo que haya escrito
+			// Validamos que solo pueda elegir 1 o 2
+			while (opcion != 1 && opcion != 2) {
+				System.out.print("Opcion: ");
+				try {
+					opcion = Integer.parseInt(in.nextLine());
+				} catch (NumberFormatException e) {
+					System.out.println("Por favor, introduce 1 o 2.");
 				}
 			}
 
-			idPartida = idPartidaTemp;
-			unirsePartida();
-		}
-		// Entramos.
+			if (opcion == 1) {
+				System.out.println();
+				crearPartida();
+
+				// Si crea partida, ya puede entrar al bucle del juego
+				entrarJuego = true;
+
+			} else {
+				long idPartidaTemp = -1;
+
+				// Pedimos el ID hasta que meta un número válido
+				while (idPartidaTemp < 0) {
+					System.out.print("ID partida: ");
+
+					if (in.hasNextLong()) {
+						idPartidaTemp = in.nextLong();
+						in.nextLine(); // Limpiamos el ENTER que queda pendiente
+
+						if (idPartidaTemp < 0) {
+							System.out.println("El ID debe ser positivo.");
+						}
+					} else {
+						System.out.println("Introduce un número válido.");
+						in.nextLine(); // Limpiamos lo que haya escrito mal
+					}
+				}
+
+				idPartida = idPartidaTemp;
+
+				// Intentamos unirnos. Si falla, no entramos al juego y vuelve al menú
+				if (unirsePartida()) {
+					entrarJuego = true;
+				} else {
+					System.out.println();
+					System.out.println("Volviendo al menú principal...");
+					System.out.println();
+				}
+			}
+
+		} while (!entrarJuego);
+
+		// Cuando ya tenemos partida válida, empieza el juego de verdad
 		jugarBucle();
 	}
 
@@ -95,14 +114,14 @@ public class ClienteConsola {
 		}
 	}
 
-	static void unirsePartida() {// Llamamos al endpoint /unirse con el idPartida introducido por el usuario.
+	static boolean unirsePartida() {// Llamamos al endpoint /unirse con el idPartida introducido por el usuario.
 		try {
 			String json = get("/unirse?idPartida=" + idPartida + "&nombre=" + enc(nombre));
 
 			if (json.contains("\"ok\":false")) {
 				RespuestaError r = om.readValue(json, RespuestaError.class);
 				System.out.println(r.mensaje);
-				System.exit(0);
+				return false;
 			}
 
 			RespuestaUnirse r = om.readValue(json, RespuestaUnirse.class);
@@ -110,6 +129,7 @@ public class ClienteConsola {
 			System.out.println(r.mensaje);
 			mostrarCartas(r.cartas);
 			misCartas = r.cartas;
+			return true;
 
 		} catch (Exception e) {
 			System.err.println("Error al unirse");
@@ -118,7 +138,7 @@ public class ClienteConsola {
 			} else {
 				System.err.println(e.getMessage());
 			}
-			System.exit(0);
+			return false;
 		}
 	}
 
@@ -138,15 +158,15 @@ public class ClienteConsola {
 				System.out.println();
 
 				if (misCartas != null) {
-		            System.out.println("------ TUS CARTAS ------");
-		            mostrarCartas(misCartas);
-		        }
+					System.out.println("------ TUS CARTAS ------");
+					mostrarCartas(misCartas);
+				}
 				// Mostramos ultima jugada si existe.
 				if (estado.ultJugada == null) {
 					System.out.println("Ultima jugada: Ninguna");
 				} else if (estado.ultJugada.valor2 > 0) {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
-							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor) + " y "
+							+ textoTipo(estado.ultJugada.tipo) + " de " + textoValor(estado.ultJugada.valor) + " y "
 							+ textoValor(estado.ultJugada.valor2));
 					System.out.println();
 				} else {
@@ -157,16 +177,16 @@ public class ClienteConsola {
 
 				// Partida terminada por lo que mostramos el ganador y salimos del bucle.
 				if (estado.finPartida) {
-					System.out.println("FIN DE PARTIDA");
-					System.out.println("Ganador: " + estado.ganador);
+					System.out.println("\nFIN DE PARTIDA");
+					System.out.println("\n🎉🎉 GANADOR DE LA PARTIDA: " + estado.ganador + " 🎉🎉");
 					System.out.println();
 					terminar = true;
 				} else if (estado.esTuTurno && estado.jugadoresActuales.length >= 2) {
 					System.out.println("ES TU TURNO");
 					if (estado.ultJugada == null) {
-				        System.out.println("(No puedes levantar, no hay jugada anterior)");
-				    }
-				    menuTurno(estado.ultJugada != null);
+						System.out.println("(No puedes levantar, no hay jugada anterior)");
+					}
+					menuTurno(estado.ultJugada != null);
 				} else if (estado.esTuTurno && estado.jugadoresActuales.length < 2) {
 					// Si es nuestro turno y estamos solos esperamos a los demas. (No tiene sentido
 					// jugar 1 solo).
@@ -194,31 +214,39 @@ public class ClienteConsola {
 	}
 
 	static void menuTurno(boolean puedeLevantar) {
-	    System.out.println("1. Jugar");
-	    if (puedeLevantar) System.out.println("2. Levantar");
+		System.out.println("1. Jugar");
+		if (puedeLevantar)
+			System.out.println("2. Levantar");
 
-	    int opcion = 0;
-	    while (opcion != 1 && (opcion != 2 || !puedeLevantar)) {
-	        System.out.print("Opcion: ");
-	        try {
-	            opcion = Integer.parseInt(in.nextLine());
-	            if (opcion == 2 && !puedeLevantar) {
-	                System.out.println("No puedes levantar ahora, no hay jugada anterior.");
-	            }
-	        } catch (NumberFormatException e) {
-	            System.out.println("Por favor, introduce una opción válida.");
-	        }
-	    }
+		int opcion = 0;
+		while (opcion != 1 && (opcion != 2 || !puedeLevantar)) {
+			System.out.print("Opcion: ");
+			try {
+				opcion = Integer.parseInt(in.nextLine());
+				if (opcion == 2 && !puedeLevantar) {
+					System.out.println("No puedes levantar ahora, no hay jugada anterior.");
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("Por favor, introduce una opción válida.");
+			}
+		}
 
-	    if (opcion == 1) jugar();
-	    else levantar();
+		if (opcion == 1)
+			jugar();
+		else {
+			boolean fin = levantar();
+
+			if (fin) {
+				System.exit(0);
+			}
+		}
 	}
 
 	static void jugar() {// Pide tipo y valor, validandolos.
 
 		String tipo = "";
 		System.out.println();
-		
+
 		while (!tipoValido(tipo)) {
 			System.out.println("----Tipos----");
 			System.out.println("- Carta.");
@@ -237,9 +265,9 @@ public class ClienteConsola {
 
 		int valor = 0;
 		int valor2 = 0;
-		
+
 		System.out.println();
-		
+
 		while (valor == 0) {// Validamos.
 			if (tipo.equals("doblepareja") || tipo.equals("full")) {
 				System.out.print("Valor MÁS ALTO (2-10, J, Q, K, A): ");
@@ -323,8 +351,8 @@ public class ClienteConsola {
 		}
 	}
 
-	static void levantar() {// Llamamos al endpoint /jugar con tipo = levantar para mirar la jugada
-							// anterior.
+	static boolean levantar() {// Llamamos al endpoint /jugar con tipo = levantar para mirar la jugada
+								// anterior.
 
 		try {
 			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=levantar&valor=0");
@@ -339,7 +367,10 @@ public class ClienteConsola {
 
 			if (r.finPartida) {
 				System.out.println("Ganador: " + r.ganador);
+				return true;
 			}
+
+			return false;
 
 		} catch (Exception e) {
 			System.out.println("Error al levantar");
@@ -348,6 +379,7 @@ public class ClienteConsola {
 			} else {
 				System.out.println(e.getMessage());
 			}
+			return false;
 		}
 	}
 
@@ -402,6 +434,15 @@ public class ClienteConsola {
 
 		for (int i = 0; i < jugadores.length; i++) {
 			System.out.println("- " + jugadores[i]);
+		}
+	}
+
+	static String textoTipo(String tipo) {
+		switch (tipo.toLowerCase()) {
+		case "doblepareja":
+			return "doble pareja";
+		default:
+			return tipo;
 		}
 	}
 
