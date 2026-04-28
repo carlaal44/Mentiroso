@@ -8,7 +8,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import tools.jackson.databind.ObjectMapper;
 
 //Hacemos peticiones GET al servidor, usamos ObjetcMapper para convertir la respuesta.
@@ -137,6 +136,10 @@ public class ClienteConsola {
 				// Mostramos ultima jugada si existe.
 				if (estado.ultJugada == null) {
 					System.out.println("Ultima jugada: Ninguna");
+				} else if (estado.ultJugada.valor2 > 0) {
+					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
+							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor) + " y "
+							+ textoValor(estado.ultJugada.valor2));
 				} else {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
 							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor));
@@ -171,9 +174,10 @@ public class ClienteConsola {
 				}
 			}
 		}
+
 	}
 
-	static void menuTurno() {// Menu del turno del trabajador pudiendo jugar o levantar.
+	static void menuTurno() {// Menu del turno del jugador pudiendo jugar o levantar.
 
 		System.out.println("1. Jugar");
 		System.out.println("2. Levantar");
@@ -215,7 +219,9 @@ public class ClienteConsola {
 				System.out.println("Tipo no válido. Intenta otra vez.");
 			}
 		}
+
 		int valor = 0;
+		int valor2 = 0;
 
 		while (valor == 0) {// Validamos.
 			if (tipo.equals("doblepareja") || tipo.equals("full")) {
@@ -223,8 +229,8 @@ public class ClienteConsola {
 			} else {
 				System.out.print("Valor (2-10, J, Q, K, A): ");
 			}
-			String valorTexto = in.nextLine().toUpperCase();
 
+			String valorTexto = in.nextLine().toUpperCase();
 			valor = numeroValorSeguro(valorTexto);
 
 			if (valor == 0) {
@@ -232,12 +238,25 @@ public class ClienteConsola {
 			}
 		}
 
+		if (tipo.equals("doblepareja") || tipo.equals("full")) {
+			while (valor2 == 0) {
+				System.out.print("Segundo valor (2-10, J, Q, K, A): ");
+				String valorTexto2 = in.nextLine().toUpperCase();
+
+				valor2 = numeroValorSeguro(valorTexto2);
+
+				if (valor2 == 0) {
+					System.out.println("Valor no válido. Prueba con 2-10, J, Q, K o A.");
+				} else if (valor2 == valor) {
+					System.out.println("Los dos valores no pueden ser iguales.");
+					valor2 = 0;
+				}
+			}
+		}
+
 		try {
-			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=" + enc(tipo)// enc,
-																												// explicado
-																												// mas
-																												// abajo.
-					+ "&valor=" + valor);
+			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=" + enc(tipo)
+					+ "&valor=" + valor + "&valor2=" + valor2); // enc explicado mas abajo.
 
 			RespuestaJugada r = om.readValue(json, RespuestaJugada.class);
 
@@ -385,6 +404,7 @@ public class ClienteConsola {
 	public static class Jugada {
 		public String tipo;
 		public int valor;
+		public int valor2;
 		public Jugador jugador;
 		public boolean verdad;
 	}
