@@ -33,9 +33,16 @@ public class ClienteConsola {
 
 		System.out.println("1. Crear partida");
 		System.out.println("2. Unirse a partida");
-		System.out.print("Opcion: ");
-		int opcion = in.nextInt();
-		in.nextLine();
+
+		int opcion = 0;
+		while (opcion != 1 && opcion != 2) {
+			System.out.print("Opcion: ");
+			try {
+				opcion = Integer.parseInt(in.nextLine());
+			} catch (NumberFormatException e) {
+				System.out.println("Por favor, introduce 1 o 2.");
+			}
+		}
 
 		if (opcion == 1) {
 			crearPartida();
@@ -170,9 +177,16 @@ public class ClienteConsola {
 
 		System.out.println("1. Jugar");
 		System.out.println("2. Levantar");
-		System.out.print("Opcion: ");
-		int opcion = in.nextInt();
-		in.nextLine();
+
+		int opcion = 0;
+		while (opcion != 1 && opcion != 2) {
+			System.out.print("Opcion: ");
+			try {
+				opcion = Integer.parseInt(in.nextLine());
+			} catch (NumberFormatException e) {
+				System.out.println("Por favor, introduce 1 o 2.");
+			}
+		}
 
 		if (opcion == 1) {
 			jugar();
