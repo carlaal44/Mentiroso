@@ -8,7 +8,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 //Hacemos peticiones GET al servidor, usamos ObjetcMapper para convertir la respuesta.
 
@@ -39,9 +39,25 @@ public class ClienteConsola {
 		if (opcion == 1) {
 			crearPartida();
 		} else {
-			System.out.print("ID partida: ");
-			idPartida = in.nextLong();
-			in.nextLine();
+			long idPartidaTemp = -1;
+
+			while (idPartidaTemp < 0) {
+				System.out.print("ID partida: ");
+
+				if (in.hasNextLong()) {
+					idPartidaTemp = in.nextLong();
+					in.nextLine(); // limpiar salto de línea
+
+					if (idPartidaTemp < 0) {
+						System.out.println("El ID debe ser positivo.");
+					}
+				} else {
+					System.out.println("Introduce un número válido.");
+					in.nextLine(); // limpiar lo que haya escrito
+				}
+			}
+
+			idPartida = idPartidaTemp;
 			unirsePartida();
 		}
 		// Entramos.
@@ -68,6 +84,13 @@ public class ClienteConsola {
 	static void unirsePartida() {// Llamamos al endpoint /unirse con el idPartida introducido por el usuario.
 		try {
 			String json = get("/unirse?idPartida=" + idPartida + "&nombre=" + enc(nombre));
+
+			if (json.contains("\"ok\":false")) {
+				RespuestaError r = om.readValue(json, RespuestaError.class);
+				System.out.println(r.mensaje);
+				System.exit(0);
+			}
+
 			RespuestaUnirse r = om.readValue(json, RespuestaUnirse.class);
 
 			System.out.println(r.mensaje);
@@ -75,8 +98,9 @@ public class ClienteConsola {
 			mostrarJugadores(r.jugadoresActuales);
 
 		} catch (Exception e) {
-			System.out.println("Error al unirse");
-			System.out.println(e.getMessage());
+			System.err.println("Error al unirse");
+			System.err.println(e.getMessage());
+			System.exit(0);
 		}
 	}
 
@@ -93,16 +117,16 @@ public class ClienteConsola {
 				System.out.println();
 				System.out.println("----- ESTADO -----");
 				mostrarJugadores(estado.jugadoresActuales);
-				
-				//Mostramos ultima jugada si existe.
+
+				// Mostramos ultima jugada si existe.
 				if (estado.ultJugada == null) {
 					System.err.println("Ultima jugada: Ninguna");
 				} else {
 					System.out.println("Ultima jugada: " + estado.ultJugada.jugador.nombre + " dijo "
 							+ estado.ultJugada.tipo + " de " + textoValor(estado.ultJugada.valor));
 				}
-				
-				//Partida terminada por lo que mostramos el ganador y salimos del bucle.
+
+				// Partida terminada por lo que mostramos el ganador y salimos del bucle.
 				if (estado.finPartida) {
 					System.out.println("FIN DE PARTIDA");
 					System.out.println("Ganador: " + estado.ganador);
@@ -111,7 +135,8 @@ public class ClienteConsola {
 					System.out.println("ES TU TURNO");
 					menuTurno();
 				} else if (estado.esTuTurno && estado.jugadoresActuales.length < 2) {
-					//Si es nuestro turno y estamos solos esperamos a los demas. (No tiene sentido jugar 1 solo).
+					// Si es nuestro turno y estamos solos esperamos a los demas. (No tiene sentido
+					// jugar 1 solo).
 					System.out.println("Esperando a que se una otro jugador...");
 					System.out.println("Pulsa ENTER para actualizar...");
 					in.nextLine();
@@ -128,14 +153,14 @@ public class ClienteConsola {
 		}
 	}
 
-	static void menuTurno() {//Menu del turno del trabajador pudiendo jugar o levantar.
+	static void menuTurno() {// Menu del turno del trabajador pudiendo jugar o levantar.
 
 		System.out.println("1. Jugar");
 		System.out.println("2. Levantar");
 		System.out.print("Opcion: ");
 		int opcion = in.nextInt();
 		in.nextLine();
-		
+
 		if (opcion == 1) {
 			jugar();
 
@@ -144,7 +169,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void jugar() {//Pide tipo y valor, validandolos.
+	static void jugar() {// Pide tipo y valor, validandolos.
 
 		String tipo = "";
 
@@ -165,7 +190,7 @@ public class ClienteConsola {
 		}
 		int valor = 0;
 
-		while (valor == 0) {//Validamos.
+		while (valor == 0) {// Validamos.
 			System.out.print("Valor (2-10, J, Q, K, A): ");
 			String valorTexto = in.nextLine().toUpperCase();
 
@@ -177,7 +202,10 @@ public class ClienteConsola {
 		}
 
 		try {
-			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=" + enc(tipo)//enc, explicado mas abajo.
+			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=" + enc(tipo)// enc,
+																												// explicado
+																												// mas
+																												// abajo.
 					+ "&valor=" + valor);
 
 			RespuestaJugada r = om.readValue(json, RespuestaJugada.class);
@@ -198,12 +226,12 @@ public class ClienteConsola {
 		}
 	}
 
-	static boolean tipoValido(String tipo) {//Comprobamos si es valido.
-		return tipo.equalsIgnoreCase("carta") || tipo.equalsIgnoreCase("pareja") || tipo.equalsIgnoreCase("doblepareja") || tipo.equalsIgnoreCase("trio")
-				|| tipo.equalsIgnoreCase("full") || tipo.equalsIgnoreCase("poker");
+	static boolean tipoValido(String tipo) {// Comprobamos si es valido.
+		return tipo.equalsIgnoreCase("carta") || tipo.equalsIgnoreCase("pareja") || tipo.equalsIgnoreCase("doblepareja")
+				|| tipo.equalsIgnoreCase("trio") || tipo.equalsIgnoreCase("full") || tipo.equalsIgnoreCase("poker");
 	}
 
-	static int numeroValorSeguro(String valor) {//Convertimos el String a int.
+	static int numeroValorSeguro(String valor) {// Convertimos el String a int.
 
 		if (valor.equals("A"))
 			return 14;
@@ -224,7 +252,8 @@ public class ClienteConsola {
 		}
 	}
 
-	static void levantar() {//Llamamos al endpoint /jugar con tipo = levantar para mirar la jugada anterior.
+	static void levantar() {// Llamamos al endpoint /jugar con tipo = levantar para mirar la jugada
+							// anterior.
 
 		try {
 			String json = get("/jugar?idPartida=" + idPartida + "&nombre=" + enc(nombre) + "&tipo=levantar&valor=0");
@@ -247,12 +276,14 @@ public class ClienteConsola {
 		}
 	}
 
-	static RespuestaUnirse consultarEstado() throws Exception {//Consultamos el estado actual llamando al endpoint /estado.
+	static RespuestaUnirse consultarEstado() throws Exception {// Consultamos el estado actual llamando al endpoint
+																// /estado.
 		String json = get("/estado?idPartida=" + idPartida + "&nombre=" + enc(nombre));
 		return om.readValue(json, RespuestaUnirse.class);
 	}
 
-	static String get(String endpoint) throws Exception {//Metodo que hace la peticion GET al servidor y devuelve el cuerpo como String.
+	static String get(String endpoint) throws Exception {// Metodo que hace la peticion GET al servidor y devuelve el
+															// cuerpo como String.
 
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(BASE + endpoint)).build();
 		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -264,21 +295,6 @@ public class ClienteConsola {
 	// caracteres especiales a una URL.
 	static String enc(String texto) {
 		return URLEncoder.encode(texto, StandardCharsets.UTF_8);
-	}
-
-	static int numeroValor(String valor) {
-
-		if (valor.equalsIgnoreCase("A")) {
-			return 14;
-		} else if (valor.equalsIgnoreCase("K")) {
-			return 13;
-		} else if (valor.equalsIgnoreCase("Q")) {
-			return 12;
-		} else if (valor.equalsIgnoreCase("J")) {
-			return 11;
-		} else {
-			return Integer.parseInt(valor);
-		}
 	}
 
 	static String textoValor(int valor) {
@@ -296,7 +312,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void mostrarCartas(Carta[] cartas) {//Mostramos cartas al jugador.
+	static void mostrarCartas(Carta[] cartas) {// Mostramos cartas al jugador.
 
 		System.out.println("Tus cartas:");
 
@@ -305,7 +321,7 @@ public class ClienteConsola {
 		}
 	}
 
-	static void mostrarJugadores(String[] jugadores) {//Mostramos lista de jugadores.
+	static void mostrarJugadores(String[] jugadores) {// Mostramos lista de jugadores.
 
 		System.out.println("Jugadores:");
 
@@ -314,7 +330,7 @@ public class ClienteConsola {
 		}
 	}
 
-	//Clases internas para mapear las respuestas JSON del servidor.
+	// Clases internas para mapear las respuestas JSON del servidor.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class Carta {
 		public String valor;
@@ -334,7 +350,7 @@ public class ClienteConsola {
 		public boolean verdad;
 	}
 
-	//Mapea la respuesta de /crear.
+	// Mapea la respuesta de /crear.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class RespuestaInicio {
 		public long idPartida;
@@ -342,7 +358,7 @@ public class ClienteConsola {
 		public String mensaje;
 	}
 
-	//Mapea la respuesta de /jugar y /levantar.
+	// Mapea la respuesta de /jugar y /levantar.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class RespuestaJugada {
 		public boolean ok;
@@ -353,7 +369,7 @@ public class ClienteConsola {
 		public String ganador;
 	}
 
-	//Mapea la respuesta de /estado y /unirse.
+	// Mapea la respuesta de /estado y /unirse.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class RespuestaUnirse {
 		public long idPartida;
@@ -364,5 +380,12 @@ public class ClienteConsola {
 		public String mensaje;
 		public boolean finPartida;
 		public String ganador;
+	}
+
+	// Mapea las respuestas de error del servidor.
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class RespuestaError {
+		public boolean ok;
+		public String mensaje;
 	}
 }
