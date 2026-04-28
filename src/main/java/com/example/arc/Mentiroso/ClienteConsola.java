@@ -204,7 +204,11 @@ public class ClienteConsola {
 		int valor = 0;
 
 		while (valor == 0) {// Validamos.
-			System.out.print("Valor (2-10, J, Q, K, A): ");
+			if (tipo.equals("doblepareja") || tipo.equals("full")) {
+				System.out.print("Valor MÁS ALTO (2-10, J, Q, K, A): ");
+			} else {
+				System.out.print("Valor (2-10, J, Q, K, A): ");
+			}
 			String valorTexto = in.nextLine().toUpperCase();
 
 			valor = numeroValorSeguro(valorTexto);
