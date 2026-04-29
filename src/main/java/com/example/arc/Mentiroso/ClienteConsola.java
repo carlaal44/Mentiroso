@@ -14,7 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 
 public class ClienteConsola {
 
-	static final String BASE = "http://localhost:8080";
+	static final String BASE = "http://10.1.192.212:8080";
 
 	static Scanner in = new Scanner(System.in);
 	static HttpClient client = HttpClient.newHttpClient();
@@ -105,12 +105,7 @@ public class ClienteConsola {
 			misCartas = r.cartas;
 
 		} catch (Exception e) {
-			System.out.println("Error creando partida");
-			if (e.getMessage() == null) {
-				System.out.println("Error de conexión: El servidor no responde o está inactivo.");
-			} else {
-				System.out.println(e.getMessage());
-			}
+			System.err.println("No se pudo crear la partida. Comprueba que el servidor está encendido.");
 		}
 	}
 
@@ -132,12 +127,7 @@ public class ClienteConsola {
 			return true;
 
 		} catch (Exception e) {
-			System.err.println("Error al unirse");
-			if (e.getMessage() == null) {
-				System.err.println("Error de conexión: El servidor no responde o está inactivo.");
-			} else {
-				System.err.println(e.getMessage());
-			}
+			System.err.println("No se pudo unir a la partida. Comprueba que el servidor está encendido.");
 			return false;
 		}
 	}
@@ -202,12 +192,7 @@ public class ClienteConsola {
 				}
 
 			} catch (Exception e) {
-				System.out.println("Error consultando estado");
-				if (e.getMessage() == null) {
-					System.out.println("Error de conexión: El servidor no responde o está inactivo.");
-				} else {
-					System.out.println(e.getMessage());
-				}
+				System.out.println("No se pudo actualizar la partida. Comprueba que el servidor sigue encendido.");
 			}
 		}
 
@@ -316,12 +301,7 @@ public class ClienteConsola {
 			}
 
 		} catch (Exception e) {
-			System.err.println("Error al jugar");
-			if (e.getMessage() == null) {
-				System.err.println("Error de conexión: El servidor no responde o está inactivo.");
-			} else {
-				System.err.println(e.getMessage());
-			}
+			System.err.println("No se pudo enviar la jugada. Revisa la conexión con el servidor.");
 		}
 	}
 
@@ -373,12 +353,7 @@ public class ClienteConsola {
 			return false;
 
 		} catch (Exception e) {
-			System.out.println("Error al levantar");
-			if (e.getMessage() == null) {
-				System.out.println("Error de conexión: El servidor no responde o está inactivo.");
-			} else {
-				System.out.println(e.getMessage());
-			}
+			System.out.println("No se pudo levantar la jugada. Revisa la conexión con el servidor.");
 			return false;
 		}
 	}
